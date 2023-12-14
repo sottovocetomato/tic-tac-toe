@@ -31,7 +31,6 @@ const winner = ref(null)
 
 onMounted(async () => {
   await nextTick(() => {
-    console.log(gridWrap.value, 'gridWrap.value')
     gridCollection.value = gridWrap.value.querySelectorAll('.game-grid')
     let arr = []
     gridCollection.value.forEach((c, i) => {
@@ -44,7 +43,9 @@ onMounted(async () => {
         setPlayerToken(c)
       })
     })
-    startGame()
+    if (!playerTurn.value) {
+      cpuMove()
+    }
   })
 })
 
@@ -58,13 +59,9 @@ function setPlayerToken(c) {
   cpuMove()
 }
 
-function startGame() {
-  if (!playerTurn.value) cpuMove()
-}
-
 function cpuMove() {
-  const curBoard = JSON.parse(JSON.stringify(gridArr.value))
-  const { move } = minimax(curBoard, 0, true, -Infinity, Infinity)
+  const board = JSON.parse(JSON.stringify(gridArr.value))
+  const { move } = minimax(board, 0, true, -Infinity, Infinity)
 
   gridArr.value[move.r][move.c] = token.value
   gridCollection.value[gridSize * move.r + move.c].innerText = token.value
@@ -73,7 +70,7 @@ function cpuMove() {
 
 function checkWin(board) {
   let winner = null
-  // console.log(board, 'board')
+  console.log(board, 'checkwin')
   for (let r = 0; r < board.length; r++) {
     if (board[r].every((c) => !!c && c === board[r][0])) {
       winner = board[r][0]
@@ -125,15 +122,12 @@ function checkWin(board) {
 
 function minimax(board, depth, isMaximizing, alpha, beta) {
   const result = checkWin(board)
+  if (depth > 4) return { score: 0 }
   if (scoreMap[result] != null) {
-    // console.log(result, scoreMap[result], depth)
-    if (depth > 1) return { score: 0 }
     if (result === 'tie') return { score: scoreMap[result] }
     const evaluated = result === aiToken ? scoreMap[result] - depth : scoreMap[result] + depth
     return { score: evaluated }
-    // return scoreMap[result]
   }
-  // const curBoard = JSON.parse(JSON.stringify(board))
   if (isMaximizing) {
     let bestScore = -Infinity
     let move = {}
@@ -142,8 +136,7 @@ function minimax(board, depth, isMaximizing, alpha, beta) {
         const curBoard = JSON.parse(JSON.stringify(board))
         if (curBoard[r][c] === null) {
           curBoard[r][c] = aiToken
-          const { score } = minimax(curBoard, depth + 1, false)
-
+          const { score } = minimax(curBoard, depth + 1, false, alpha, beta)
           move = score > bestScore ? { r, c } : move
           bestScore = Math.max(score, bestScore)
           alpha = Math.max(score, alpha)
@@ -151,6 +144,7 @@ function minimax(board, depth, isMaximizing, alpha, beta) {
         }
       }
     }
+
     // console.log(bestScore, depth, isMaximizing)
     return { score: bestScore, move }
   } else {
@@ -161,10 +155,10 @@ function minimax(board, depth, isMaximizing, alpha, beta) {
         const curBoard = JSON.parse(JSON.stringify(board))
         if (curBoard[r][c] === null) {
           curBoard[r][c] = playerToken
-          const { score } = minimax(curBoard, depth + 1, true)
+          const { score } = minimax(curBoard, depth + 1, true, alpha, beta)
           move = score < bestScore ? { r, c } : move
           bestScore = Math.min(score, bestScore)
-          beta = Math.max(score, beta)
+          beta = Math.min(score, beta)
           if (beta <= alpha) break
         }
       }
