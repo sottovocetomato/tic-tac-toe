@@ -20,13 +20,11 @@ const gridCollection = ref([])
 const gridArr = ref([])
 
 const playerTurn = ref(false)
-const cpuTurn = computed(() => !playerTurn.value)
 const aiToken = 'X'
 const playerToken = 'O'
 
 const scoreMap = { X: 10, O: -10, tie: 0 }
 
-const token = computed(() => (playerTurn.value ? playerToken : aiToken))
 const winner = ref(null)
 
 onMounted(async () => {
@@ -50,74 +48,82 @@ onMounted(async () => {
 })
 
 function setPlayerToken(c) {
-  if (c.innerText) return
-  c.innerText = token.value
+  if (c.innerText || winner.value) return
+  c.innerText = playerToken
   const row = Math.ceil(c.dataset.id / 3) - 1
   const column = c.dataset.id % gridSize ? (c.dataset.id % gridSize) - 1 : gridSize - 1
-  gridArr.value[row][column] = token.value
+  gridArr.value[row][column] = playerToken
+  winner.value = checkWin(gridArr.value)
   playerTurn.value = !playerTurn.value
   cpuMove()
 }
 
 function cpuMove() {
+  if (winner.value) return
   const board = JSON.parse(JSON.stringify(gridArr.value))
   const { move } = minimax(board, 0, true, -Infinity, Infinity)
 
-  gridArr.value[move.r][move.c] = token.value
-  gridCollection.value[gridSize * move.r + move.c].innerText = token.value
+  gridArr.value[move.r][move.c] = aiToken
+  gridCollection.value[gridSize * move.r + move.c].innerText = aiToken
+  winner.value = checkWin(gridArr.value)
   playerTurn.value = !playerTurn.value
 }
 
 function checkWin(board) {
   let winner = null
-  console.log(board, 'checkwin')
+  let tokenStreak = 0
   for (let r = 0; r < board.length; r++) {
     if (board[r].every((c) => !!c && c === board[r][0])) {
       winner = board[r][0]
-      return winner
+      break
     }
   }
 
   for (let c = 0; c < board.length; c++) {
+    if (winner) break
     for (let r = 0; r < board.length; r++) {
-      if (!board?.[r]?.[c]) break
-
-      if (board?.[r]?.[c] !== board?.[0]?.[c]) break
-      if (r === board.length - 1) {
-        winner = board[0][c]
-        return winner
+      if (!board?.[r]?.[c] || board?.[r]?.[c] !== board?.[0]?.[c]) {
+        tokenStreak = 0
+        break
       }
+      tokenStreak++
+      winner = tokenStreak === gridSize ? board[0][c] : null
     }
   }
 
   for (let c = 0; c < board[0].length; c++) {
-    if (!board?.[c]?.[c]) break
-    if (board?.[c]?.[c] !== board?.[0]?.[0]) {
+    if (winner) break
+    if (!board?.[c]?.[c] || board?.[c]?.[c] !== board?.[0]?.[0]) {
+      tokenStreak = 0
       break
     }
-    if (c === board[0].length - 1) {
-      winner = board?.[c]?.[c]
-      return winner
-    }
+    tokenStreak++
+    winner = tokenStreak === gridSize ? board?.[c]?.[c] : null
   }
+
   for (let c = 0; c < board[0].length; c++) {
-    if (!board?.[board.length - (c + 1)]?.[c]) break
-    if (board?.[board.length - (c + 1)]?.[c] !== board?.[board.length - 1]?.[0]) {
+    if (winner) break
+    if (
+      !board?.[board.length - (c + 1)]?.[c] ||
+      board?.[board.length - (c + 1)]?.[c] !== board?.[board.length - 1]?.[0]
+    ) {
+      tokenStreak = 0
       break
     }
-    if (c === board[0].length - 1) {
-      winner = board?.[board.length - 1]?.[0]
-      return winner
-    }
+    tokenStreak++
+    winner = tokenStreak === gridSize ? board?.[board.length - 1]?.[0] : null
   }
 
   for (let r = 0; r < board.length; r++) {
-    if (!board[r].every((c) => !!c)) break
-    if (r === board.length - 1 && winner == null) {
-      winner = 'tie'
-      return winner
+    if (winner) break
+    if (!board[r].every((c) => !!c)) {
+      tokenStreak = 0
+      break
     }
+    tokenStreak++
+    winner = tokenStreak === gridSize ? 'tie' : null
   }
+  return winner
 }
 
 function minimax(board, depth, isMaximizing, alpha, beta) {
