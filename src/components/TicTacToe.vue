@@ -1,72 +1,155 @@
 <template>
-  <div class="grid-wrap" ref="gridWrap">
-    <span class="game-grid" data-id="1"></span><span class="game-grid" data-id="2"></span
-    ><span class="game-grid" data-id="3"></span><span class="game-grid" data-id="4"></span
-    ><span class="game-grid" data-id="5"></span><span class="game-grid" data-id="6"></span
-    ><span class="game-grid" data-id="7"></span><span class="game-grid" data-id="8"></span
-    ><span class="game-grid" data-id="9"></span>
+  <div class="grid-wrap" ref="gridWrap" :style="gridStyle" :key="gridSize">
+    <span v-for="cell in gridSize * gridSize" :key="cell" :data-id="cell" class="game-grid"></span>
   </div>
-  <div v-if="winner">
-    <h3>{{ winner }} wins!</h3>
+  <div class="game-controls">
+    <button @click="startGame">{{ !gameIsRunning ? 'Start' : 'Restart' }}</button>
+    <div>
+      <label for="game-difficulty" class="select-label">Choose gridSize:</label>
+      <select id="game-difficulty" @change="changeGridSize" :disabled="gameIsRunning">
+        <option value="3">3x3</option>
+        <option value="5">5x5</option>
+        <!--    <option value="10">10x10</option>-->
+      </select>
+    </div>
+    <div>
+      <label for="starting-player" class="select-label">Choose starting player:</label>
+      <select id="starting-player" @change="(e) => changeStartingP(e)" :disabled="gameIsRunning">
+        <option value="human">Human</option>
+        <option value="ai">Ai</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="game-difficulty" class="select-label">Choose ai difficulty:</label>
+      <select id="game-difficulty" @change="changeDifficulty" :disabled="gameIsRunning">
+        <option value="2">Medium</option>
+        <option value="4">Hard</option>
+      </select>
+    </div>
+
+    <div v-if="winner">
+      <h3>{{ winner }} wins!</h3>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-const gridSize = 3
+const gridSize = ref(3)
 const gridWrap = ref(null)
 const gridCollection = ref([])
 const gridArr = ref([])
 
-const playerTurn = ref(false)
-const aiToken = 'X'
-const playerToken = 'O'
+const isAiFirst = ref(false)
+
+const gameDepth = ref(1)
+
+const maximizerToken = 'X'
+const minimizerToken = 'O'
+
+const aiToken = computed(() => (isAiFirst.value ? maximizerToken : minimizerToken))
+const playerToken = computed(() => (isAiFirst.value ? minimizerToken : maximizerToken))
+
+const gridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${gridSize.value}, minmax(${450 / gridSize.value}px, 1fr))`,
+  fontSize: `${15 / gridSize.value}rem`
+}))
+
+const gameIsRunning = ref(false)
+const gamesPlayed = ref(0)
+const playerTurn = ref(true)
 
 const scoreMap = { X: 10, O: -10, tie: 0 }
 
 const winner = ref(null)
 
-onMounted(async () => {
+onMounted(async () => await setupGridInteractions())
+
+function changeStartingP(e) {
+  isAiFirst.value = e.target.value === 'ai'
+}
+function changeDifficulty(e) {
+  console.log(e, 'startingPlayer')
+  gameDepth.value = +e.target.value
+}
+function changeGridSize(e) {
+  gridSize.value = +e.target.value
+  setupGridInteractions()
+}
+
+async function setupGridInteractions() {
   await nextTick(() => {
     gridCollection.value = gridWrap.value.querySelectorAll('.game-grid')
+    console.log(gridCollection.value)
     let arr = []
+    gridArr.value = []
     gridCollection.value.forEach((c, i) => {
       arr.push(null)
-      if (arr.length === 3) {
+      if (arr.length === gridSize.value) {
         gridArr.value.push(arr)
         arr = []
       }
       c.addEventListener('click', (e) => {
-        setPlayerToken(c)
+        playerMove(c)
       })
     })
-    if (!playerTurn.value) {
-      cpuMove()
-    }
   })
-})
+}
 
-function setPlayerToken(c) {
-  if (c.innerText || winner.value) return
-  c.innerText = playerToken
-  const row = Math.ceil(c.dataset.id / 3) - 1
-  const column = c.dataset.id % gridSize ? (c.dataset.id % gridSize) - 1 : gridSize - 1
-  gridArr.value[row][column] = playerToken
+function startGame() {
+  playerTurn.value = !isAiFirst.value
+  if (gamesPlayed.value)
+    if (gamesPlayed.value > 0) {
+      winner.value = null
+      gridCollection.value.forEach((c) => (c.innerText = ''))
+      for (let r = 0; r < gridArr.value.length; r++) {
+        for (let c = 0; c < gridArr.value[r].length; c++) {
+          gridArr.value[r][c] = null
+        }
+      }
+      // gridKey.value++
+    }
+
+  gameIsRunning.value = true
+
+  gamesPlayed.value++
+  if (isAiFirst.value) {
+    cpuMove()
+  }
+}
+
+function playerMove(c) {
+  console.log(!!c.innerText, 'c.innerText')
+  if (!playerTurn.value || c.innerText || winner.value || !gameIsRunning.value) return
+  c.innerText = playerToken.value
+  const row = Math.ceil(c.dataset.id / gridSize.value) - 1
+  const column =
+    c.dataset.id % gridSize.value ? (c.dataset.id % gridSize.value) - 1 : gridSize.value - 1
+  gridArr.value[row][column] = playerToken.value
   winner.value = checkWin(gridArr.value)
-  playerTurn.value = !playerTurn.value
+  if (winner.value) {
+    gameIsRunning.value = false
+    return
+  }
+  playerTurn.value = false
   cpuMove()
 }
 
 function cpuMove() {
-  if (winner.value) return
+  if (winner.value || !gameIsRunning.value) return
   const board = JSON.parse(JSON.stringify(gridArr.value))
-  const { move } = minimax(board, 0, true, -Infinity, Infinity)
+  const { move } = minimax(board, 0, isAiFirst.value, -Infinity, Infinity)
 
-  gridArr.value[move.r][move.c] = aiToken
-  gridCollection.value[gridSize * move.r + move.c].innerText = aiToken
+  gridArr.value[move.r][move.c] = aiToken.value
+  gridCollection.value[gridSize.value * move.r + move.c].innerText = aiToken.value
   winner.value = checkWin(gridArr.value)
-  playerTurn.value = !playerTurn.value
+  if (winner.value) {
+    gameIsRunning.value = false
+    return
+  }
+  playerTurn.value = true
 }
 
 function checkWin(board) {
@@ -87,7 +170,7 @@ function checkWin(board) {
         break
       }
       tokenStreak++
-      winner = tokenStreak === gridSize ? board[0][c] : null
+      winner = tokenStreak === gridSize.value ? board[0][c] : null
     }
   }
 
@@ -98,7 +181,7 @@ function checkWin(board) {
       break
     }
     tokenStreak++
-    winner = tokenStreak === gridSize ? board?.[c]?.[c] : null
+    winner = tokenStreak === gridSize.value ? board?.[c]?.[c] : null
   }
 
   for (let c = 0; c < board[0].length; c++) {
@@ -111,7 +194,7 @@ function checkWin(board) {
       break
     }
     tokenStreak++
-    winner = tokenStreak === gridSize ? board?.[board.length - 1]?.[0] : null
+    winner = tokenStreak === gridSize.value ? board?.[board.length - 1]?.[0] : null
   }
 
   for (let r = 0; r < board.length; r++) {
@@ -121,17 +204,17 @@ function checkWin(board) {
       break
     }
     tokenStreak++
-    winner = tokenStreak === gridSize ? 'tie' : null
+    winner = tokenStreak === gridSize.value ? 'tie' : null
   }
   return winner
 }
 
 function minimax(board, depth, isMaximizing, alpha, beta) {
   const result = checkWin(board)
-  if (depth > 4) return { score: 0 }
+  if (depth > gameDepth.value) return { score: 0 }
   if (scoreMap[result] != null) {
     if (result === 'tie') return { score: scoreMap[result] }
-    const evaluated = result === aiToken ? scoreMap[result] - depth : scoreMap[result] + depth
+    const evaluated = result === aiToken.value ? scoreMap[result] - depth : scoreMap[result] + depth
     return { score: evaluated }
   }
   if (isMaximizing) {
@@ -141,7 +224,7 @@ function minimax(board, depth, isMaximizing, alpha, beta) {
       for (let c = 0; c < board[r].length; c++) {
         const curBoard = JSON.parse(JSON.stringify(board))
         if (curBoard[r][c] === null) {
-          curBoard[r][c] = aiToken
+          curBoard[r][c] = maximizerToken
           const { score } = minimax(curBoard, depth + 1, false, alpha, beta)
           move = score > bestScore ? { r, c } : move
           bestScore = Math.max(score, bestScore)
@@ -160,7 +243,7 @@ function minimax(board, depth, isMaximizing, alpha, beta) {
       for (let c = 0; c < board[r].length; c++) {
         const curBoard = JSON.parse(JSON.stringify(board))
         if (curBoard[r][c] === null) {
-          curBoard[r][c] = playerToken
+          curBoard[r][c] = minimizerToken
           const { score } = minimax(curBoard, depth + 1, true, alpha, beta)
           move = score < bestScore ? { r, c } : move
           bestScore = Math.min(score, bestScore)
@@ -176,21 +259,34 @@ function minimax(board, depth, isMaximizing, alpha, beta) {
 </script>
 
 <style scoped>
+.game-controls {
+  margin: 15px auto;
+  display: flex;
+  width: 450px;
+  height: 150px;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
 .grid-wrap {
   margin: auto;
   display: grid;
   width: 450px;
   height: 450px;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 150px 150px 150px;
+  /*grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));*/
+  grid-auto-rows: 1fr;
   margin-top: 20%;
 }
 .game-grid {
   border: 1px solid black;
   text-align: center;
-  font-size: 5rem;
+  /*font-size: 5rem;*/
+  /*font-size: 1rem;*/
 }
 .game-grid:hover {
   cursor: pointer;
+}
+.select-label {
+  margin-right: 10px;
 }
 </style>
