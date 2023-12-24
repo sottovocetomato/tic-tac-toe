@@ -34,64 +34,64 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-const gridSize = ref(3)
-const gridWrap = ref(null)
-const gridCollection = ref([])
-const gridArr = ref([])
+type gridBoard = (string | null)[][]
 
-const isAiFirst = ref(false)
+const gridSize = ref<number>(3)
+const gridWrap = ref<HTMLDivElement | null>(null)
+const gridCollection = ref<NodeList | []>([])
+const gridArr = ref<gridBoard>([])
 
-const gameDepth = ref(1)
+const isAiFirst = ref<boolean>(false)
+
+const gameDepth = ref<number>(1)
 
 const maximizerToken = 'X'
 const minimizerToken = 'O'
 
-const aiToken = computed(() => (isAiFirst.value ? maximizerToken : minimizerToken))
-const playerToken = computed(() => (isAiFirst.value ? minimizerToken : maximizerToken))
+const aiToken = computed<string>(() => (isAiFirst.value ? maximizerToken : minimizerToken))
+const playerToken = computed<string>(() => (isAiFirst.value ? minimizerToken : maximizerToken))
 
-const gridStyle = computed(() => ({
+const gridStyle = computed<{}>(() => ({
   gridTemplateColumns: `repeat(${gridSize.value}, minmax(${450 / gridSize.value}px, 1fr))`,
   fontSize: `${15 / gridSize.value}rem`
 }))
 
-const gameIsRunning = ref(false)
-const gamesPlayed = ref(0)
-const playerTurn = ref(true)
+const gameIsRunning = ref<boolean>(false)
+const gamesPlayed = ref<number>(0)
+const playerTurn = ref<boolean>(true)
 
 const scoreMap = { X: 10, O: -10, tie: 0 }
 
-const winner = ref(null)
+const winner = ref<string>('')
 
 onMounted(async () => await setupGridInteractions())
 
-function changeStartingP(e) {
-  isAiFirst.value = e.target.value === 'ai'
+function changeStartingP(e: Event) {
+  isAiFirst.value = (e.target as HTMLInputElement).value === 'ai'
 }
-function changeDifficulty(e) {
-  console.log(e, 'startingPlayer')
-  gameDepth.value = +e.target.value
+function changeDifficulty(e: Event) {
+  gameDepth.value = +(e.target as HTMLInputElement).value
 }
-function changeGridSize(e) {
-  gridSize.value = +e.target.value
+function changeGridSize(e: Event) {
+  gridSize.value = +(e.target as HTMLInputElement).value
   setupGridInteractions()
 }
 
 async function setupGridInteractions() {
   await nextTick(() => {
-    gridCollection.value = gridWrap.value.querySelectorAll('.game-grid')
-    console.log(gridCollection.value)
-    let arr = []
+    gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid')
+    let arr: (string | null)[] = []
     gridArr.value = []
-    gridCollection.value.forEach((c, i) => {
+    gridCollection.value.forEach((c: HTMLElement) => {
       arr.push(null)
       if (arr.length === gridSize.value) {
-        gridArr.value.push(arr)
+        gridArr.value?.push(arr)
         arr = []
       }
-      c.addEventListener('click', (e) => {
+      c.addEventListener('click', () => {
         playerMove(c)
       })
     })
@@ -102,8 +102,8 @@ function startGame() {
   playerTurn.value = !isAiFirst.value
   if (gamesPlayed.value)
     if (gamesPlayed.value > 0) {
-      winner.value = null
-      gridCollection.value.forEach((c) => (c.innerText = ''))
+      winner.value = ''
+      gridCollection.value.forEach((c: HTMLElement) => (c.innerText = ''))
       for (let r = 0; r < gridArr.value.length; r++) {
         for (let c = 0; c < gridArr.value[r].length; c++) {
           gridArr.value[r][c] = null
@@ -120,8 +120,8 @@ function startGame() {
   }
 }
 
-function playerMove(c) {
-  console.log(!!c.innerText, 'c.innerText')
+function playerMove(c: HTMLElement) {
+  // console.log(!!c.innerText, 'c.innerText')
   if (!playerTurn.value || c.innerText || winner.value || !gameIsRunning.value) return
   c.innerText = playerToken.value
   const row = Math.ceil(c.dataset.id / gridSize.value) - 1
@@ -152,7 +152,7 @@ function cpuMove() {
   playerTurn.value = true
 }
 
-function checkWin(board) {
+function checkWin(board: gridBoard) {
   let winner = null
   let tokenStreak = 0
   for (let r = 0; r < board.length; r++) {
@@ -209,7 +209,13 @@ function checkWin(board) {
   return winner
 }
 
-function minimax(board, depth, isMaximizing, alpha, beta) {
+function minimax(
+  board: gridBoard,
+  depth: number,
+  isMaximizing: boolean,
+  alpha: number,
+  beta: number
+) {
   const result = checkWin(board)
   if (depth > gameDepth.value) return { score: 0 }
   if (scoreMap[result] != null) {
