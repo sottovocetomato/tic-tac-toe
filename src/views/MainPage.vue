@@ -1,10 +1,11 @@
-<template><TicTacToe /></template>
+<template><WordleGame /></template>
 
 <script>
 import TicTacToe from '../components/TicTacToe.vue'
+import WordleGame from '../components/WordleGame.vue'
 export default {
   name: 'MainPage',
-  components: { TicTacToe }
+  components: { WordleGame, TicTacToe }
 }
 </script>
 

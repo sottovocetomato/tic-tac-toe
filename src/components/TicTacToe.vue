@@ -1,41 +1,59 @@
 <template>
-  <div class="grid-wrap" ref="gridWrap" :style="gridStyle" :key="gridSize">
-    <span v-for="cell in gridSize * gridSize" :key="cell" :data-id="cell" class="game-grid"></span>
-  </div>
-  <div class="game-controls">
-    <button @click="startGame">{{ !gameIsRunning ? 'Start' : 'Restart' }}</button>
-    <div>
-      <label for="game-difficulty" class="select-label">Choose gridSize:</label>
-      <select id="game-difficulty" @change="changeGridSize" :disabled="gameIsRunning">
-        <option value="3">3x3</option>
-        <option value="5">5x5</option>
-        <!--    <option value="10">10x10</option>-->
-      </select>
+  <div class="game">
+    <div :id="`winner-message${winner ? '-show' : ''}`">
+      <h3>{{ winner?.toUpperCase() }} {{ winner !== 'tie' ? 'wins!' : '!' }}</h3>
     </div>
-    <div>
-      <label for="starting-player" class="select-label">Choose starting player:</label>
-      <select id="starting-player" @change="(e) => changeStartingP(e)" :disabled="gameIsRunning">
-        <option value="human">Human</option>
-        <option value="ai">Ai</option>
-      </select>
+    <div class="grid-wrap" ref="gridWrap" :style="gridStyle" :key="gridSize">
+      <span
+        v-for="cell in gridSize * gridSize"
+        :key="cell"
+        :data-id="cell"
+        :class="`game-grid game-grid${getScheme() === 'light' ? '-black' : '-white'}`"
+      ></span>
     </div>
+    <div class="game-controls">
+      <button @click="startGame" class="contrast control-button">
+        {{ !gameIsRunning ? 'Start' : 'Restart' }}
+      </button>
+      <div class="grid">
+        <div>
+          <label for="game-difficulty" class="select-label">Choose gridSize:</label>
+          <select id="game-difficulty" @change="changeGridSize" :disabled="gameIsRunning">
+            <option value="3">3x3</option>
+            <option value="5">5x5</option>
+            <!--    <option value="10">10x10</option>-->
+          </select>
+        </div>
+        <div>
+          <label for="starting-player" class="select-label">Choose starting player:</label>
+          <select
+            id="starting-player"
+            @change="(e) => changeStartingP(e)"
+            :disabled="gameIsRunning"
+            required
+          >
+            <option value="human">Human</option>
+            <option value="ai">Ai</option>
+          </select>
+        </div>
 
-    <div>
-      <label for="game-difficulty" class="select-label">Choose ai difficulty:</label>
-      <select id="game-difficulty" @change="changeDifficulty" :disabled="gameIsRunning">
-        <option value="2">Medium</option>
-        <option value="4">Hard</option>
-      </select>
-    </div>
-
-    <div v-if="winner">
-      <h3>{{ winner }} wins!</h3>
+        <div>
+          <label for="game-difficulty" class="select-label">Choose ai difficulty:</label>
+          <select id="game-difficulty" @change="changeDifficulty" :disabled="gameIsRunning">
+            <option value="2">Medium</option>
+            <option value="4">Hard</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
+import useThemeSwitch from '@/composables/useThemeSwitch'
+
+const { getScheme } = useThemeSwitch()
 
 type gridBoard = (string | null)[][]
 
@@ -56,7 +74,8 @@ const playerToken = computed<string>(() => (isAiFirst.value ? minimizerToken : m
 
 const gridStyle = computed<{}>(() => ({
   gridTemplateColumns: `repeat(${gridSize.value}, minmax(${450 / gridSize.value}px, 1fr))`,
-  fontSize: `${15 / gridSize.value}rem`
+  fontSize: `${14 / gridSize.value}rem`,
+  color: `${getScheme() === 'light' ? '#415462' : '#bbc6ce'}`
 }))
 
 const gameIsRunning = ref<boolean>(false)
@@ -264,35 +283,45 @@ function minimax(
 }
 </script>
 
-<style scoped>
-.game-controls {
-  margin: 15px auto;
+<style scoped lang="scss">
+.game {
   display: flex;
-  width: 450px;
-  height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+}
+.game-controls {
+  margin: 15px 0;
+  display: flex;
+  width: 850px;
+  /*height: 150px;*/
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  button {
+    width: 450px;
+  }
+  .grid {
+    width: 100%;
+  }
 }
 .grid-wrap {
-  margin: auto;
-  display: grid;
   width: 450px;
   height: 450px;
-  /*grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));*/
-  grid-auto-rows: 1fr;
-  margin-top: 20%;
-}
-.game-grid {
-  border: 1px solid black;
-  text-align: center;
-  /*font-size: 5rem;*/
-  /*font-size: 1rem;*/
 }
 .game-grid:hover {
   cursor: pointer;
 }
 .select-label {
   margin-right: 10px;
+}
+#winner-message {
+  height: auto;
+  opacity: 0;
+  &-show {
+    opacity: 1;
+  }
 }
 </style>
