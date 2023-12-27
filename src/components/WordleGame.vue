@@ -1,5 +1,6 @@
 <template>
   <div class="game">
+    <h3 :id="`game-message${message ? '-show' : ''}`">{{ message }}</h3>
     <div
       class="grid-wrap"
       ref="gridWrap"
@@ -37,6 +38,7 @@ const currRowNum = ref<number>(0)
 const currCellsInd = ref<number>(0)
 const cells = ref<NodeList | []>([])
 const rows = ref<NodeList | []>([])
+const message = ref<string>('')
 
 const input = ref<string>('')
 onMounted(async () => {
@@ -83,11 +85,11 @@ function checkWork() {
     return
   }
   if (!WORDS.includes(input.value.toLowerCase())) {
-    console.error('Word is not a valid word')
+    message.value = 'Please enter a valid word'
     return
   }
   if (!input.value === word) {
-    console.info('WINNER')
+    message.value = 'YEEEEEEAH!'
     return
   }
   cells.value.forEach((c: HTMLElement, i) => {
@@ -106,7 +108,7 @@ function checkWork() {
 console.log(word)
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .grid-wrap {
   width: 500px;
   height: 100px;
@@ -124,6 +126,14 @@ console.log(word)
 }
 .right-letter {
   background: green;
+}
+#game-message {
+  display: block;
+  height: 60px;
+  opacity: 0;
+  &-show {
+    opacity: 1;
+  }
 }
 /*.game-grid {*/
 /*  width: 100px;*/
