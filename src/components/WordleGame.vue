@@ -44,30 +44,44 @@ onMounted(async () => {
     rows.value = document.querySelectorAll('.grid-wrap')
     currRow.value = rows.value[currRowNum.value]
     cells.value = currRow.value?.querySelectorAll('.game-grid')
-    window.addEventListener('keypress', (e) => onKeyPressFn(e))
+    window.addEventListener('keydown', (e) => onKeyPressFn(e))
   })
 })
 function onKeyPressFn(e) {
-  if (currRowNum.value > 4) return
-  if (e.keyCode > 122 || e.keyCode < 65) return
+  // console.log(e, 'e')
+  if (e.keyCode === 13) {
+    console.log('enter is pressed')
+    checkWork()
+    return
+  }
+  if (e.keyCode === 8) {
+    if (!input.value) return
+    input.value = input.value.slice(0, input.value.length - 1)
+    cells.value[input.value.length].innerText = ''
+    currCellsInd.value--
+  }
+  if (currRowNum.value > 4 || currCellsInd.value > 4) return
+  if (!e.key.match(/^[a-z]$/gi)) return
+
   input.value += e.key.toUpperCase()
   cells.value[currCellsInd.value].innerText = e.key.toUpperCase()
-  console.log(currCellsInd.value)
   currCellsInd.value++
-  getNextRow(e)
 }
-function getNextRow(e) {
+function getNextRow() {
   if (currCellsInd.value > 4) {
-    checkWork(e)
     currCellsInd.value = 0
     currRowNum.value++
-    console.log(currRowNum.value, 'currRowNum.value')
+
     currRow.value = rows.value[currRowNum.value]
     cells.value = currRow.value?.querySelectorAll('.game-grid')
     input.value = ''
   }
 }
-function checkWork(e) {
+function checkWork() {
+  console.log(input.value.length)
+  if (input.value.length < 4) {
+    return
+  }
   if (!WORDS.includes(input.value.toLowerCase())) {
     console.error('Word is not a valid word')
     return
@@ -78,15 +92,16 @@ function checkWork(e) {
   }
   cells.value.forEach((c: HTMLElement, i) => {
     if (!word.includes(c.innerText)) {
-      c.classList.add('no-such-letter')
+      c.classList.add('wrong-letter')
     }
     if (word.includes(c.innerText) && word.indexOf(c.innerText) !== i) {
-      c.classList.add('has-letter-wrong-place')
+      c.classList.add('wrong-place')
     }
     if (word.includes(c.innerText) && word.indexOf(c.innerText) === i) {
-      c.classList.add('has-letter')
+      c.classList.add('right-letter')
     }
   })
+  getNextRow()
 }
 console.log(word)
 </script>
@@ -100,6 +115,15 @@ console.log(word)
   grid-gap: 5px;
   margin-bottom: 5px;
   font-size: 2.5rem;
+}
+.wrong-letter {
+  background: grey;
+}
+.wrong-place {
+  background: yellow;
+}
+.right-letter {
+  background: green;
 }
 /*.game-grid {*/
 /*  width: 100px;*/
