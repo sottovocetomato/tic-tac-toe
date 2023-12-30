@@ -23,6 +23,7 @@
 import useThemeSwitch from '../composables/useThemeSwitch.js'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { WORDS } from '../collections/wordleWords'
+import { setItem, getItem } from '../utills/localStorage/storageHelper'
 
 const { getScheme } = useThemeSwitch()
 const gridStyle = computed<{}>(() => ({
@@ -31,8 +32,8 @@ const gridStyle = computed<{}>(() => ({
   color: `${getScheme() === 'light' ? '#415462' : '#bbc6ce'}`
 }))
 
-const wordInd = Math.floor(Math.random() * WORDS.length)
-const word = WORDS[wordInd].toUpperCase()
+const word = ref<string>('')
+const wordInd = ref<number>(0)
 const currRow = ref<NodeList | []>([])
 const currRowNum = ref<number>(0)
 const currCellsInd = ref<number>(0)
@@ -41,23 +42,47 @@ const rows = ref<NodeList | []>([])
 const message = ref<string>('')
 
 const input = ref<string>('')
+const solved = ref<boolean>(false)
+
+// const timestamp = new Date().getTime()
+
 onMounted(async () => {
   await nextTick(() => {
     rows.value = document.querySelectorAll('.grid-wrap')
     currRow.value = rows.value[currRowNum.value]
     cells.value = currRow.value?.querySelectorAll('.game-grid')
     window.addEventListener('keydown', (e) => onKeyPressFn(e))
+
+    let timestamp = getItem('timestamp')
+    let solved = getItem('solved')
+
+    const currTimestamp = new Date().getTime()
+
+    if (timestamp && currTimestamp < timestamp && solved === 'true') {
+      message.value = 'Come back tomorrow for a new word!'
+      return
+    }
+    const time = new Date()
+    time.setDate(new Date().getDate() + 1)
+    timestamp = time.getTime()
+    setItem('timestamp', timestamp)
+    wordInd.value = Math.floor(Math.random() * WORDS.length)
+    setItem('id', wordInd.value)
+    setItem('solved', 'false')
+    setItem('board', [])
+    word.value = WORDS[wordInd.value].toUpperCase()
+    console.log(word.value, 'word')
   })
 })
 function onKeyPressFn(e) {
   // console.log(e, 'e')
   if (e.keyCode === 13) {
-    console.log('enter is pressed')
     checkWork()
     return
   }
   if (e.keyCode === 8) {
     if (!input.value) return
+    if (message.value) message.value = ''
     input.value = input.value.slice(0, input.value.length - 1)
     cells.value[input.value.length].innerText = ''
     currCellsInd.value--
@@ -76,6 +101,9 @@ function getNextRow() {
 
     currRow.value = rows.value[currRowNum.value]
     cells.value = currRow.value?.querySelectorAll('.game-grid')
+    const board = getItem('board')
+    board.push(input.value)
+    setItem('board', board)
     input.value = ''
   }
 }
@@ -88,24 +116,24 @@ function checkWork() {
     message.value = 'Please enter a valid word'
     return
   }
-  if (!input.value === word) {
-    message.value = 'YEEEEEEAH!'
+  if (!input.value === word.value) {
+    message.value = "That's right, you won!"
+    setItem('solved', 'true')
     return
   }
   cells.value.forEach((c: HTMLElement, i) => {
-    if (!word.includes(c.innerText)) {
+    if (!word.value.includes(c.innerText)) {
       c.classList.add('wrong-letter')
     }
-    if (word.includes(c.innerText) && word.indexOf(c.innerText) !== i) {
+    if (word.value.includes(c.innerText) && word.value.indexOf(c.innerText) !== i) {
       c.classList.add('wrong-place')
     }
-    if (word.includes(c.innerText) && word.indexOf(c.innerText) === i) {
+    if (word.value.includes(c.innerText) && word.value.indexOf(c.innerText) === i) {
       c.classList.add('right-letter')
     }
   })
   getNextRow()
 }
-console.log(word)
 </script>
 
 <style scoped lang="scss">
@@ -135,8 +163,7 @@ console.log(word)
     opacity: 1;
   }
 }
-/*.game-grid {*/
-/*  width: 100px;*/
-/*  height: 100px;*/
-/*}*/
+.game-grid {
+  border-radius: 5px;
+}
 </style>
