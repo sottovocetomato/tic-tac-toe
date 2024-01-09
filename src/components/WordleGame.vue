@@ -54,30 +54,41 @@ onMounted(async () => {
     window.addEventListener('keydown', (e) => onKeyPressFn(e))
 
     let timestamp = getItem('timestamp')
-    let solved = getItem('solved')
+    let board = getItem('board')
 
     const currTimestamp = new Date().getTime()
+    wordInd.value = getItem('id') || Math.floor(Math.random() * WORDS.length)
+    word.value = WORDS[wordInd.value].toUpperCase()
 
-    if (timestamp && currTimestamp < timestamp && solved === 'true') {
-      message.value = 'Come back tomorrow for a new word!'
+    console.log(word.value, 'word')
+
+    if (timestamp && currTimestamp < timestamp && board.length) {
+      board.forEach((w) => {
+        input.value = w
+        for (let i = 0; i < w.length; i++) {
+          cells.value[i].innerText = w[i]
+          currCellsInd.value++
+        }
+        checkWord()
+      })
+      if (board.length === 5) {
+        message.value = 'Come back tomorrow for a new word!'
+      }
       return
     }
+
     const time = new Date()
     time.setDate(new Date().getDate() + 1)
     timestamp = time.getTime()
     setItem('timestamp', timestamp)
-    wordInd.value = Math.floor(Math.random() * WORDS.length)
     setItem('id', wordInd.value)
-    setItem('solved', 'false')
     setItem('board', [])
-    word.value = WORDS[wordInd.value].toUpperCase()
-    console.log(word.value, 'word')
   })
 })
 function onKeyPressFn(e) {
   // console.log(e, 'e')
   if (e.keyCode === 13) {
-    checkWork()
+    checkWord()
     return
   }
   if (e.keyCode === 8) {
@@ -102,12 +113,14 @@ function getNextRow() {
     currRow.value = rows.value[currRowNum.value]
     cells.value = currRow.value?.querySelectorAll('.game-grid')
     const board = getItem('board')
-    board.push(input.value)
-    setItem('board', board)
+    if (!board.includes(input.value)) {
+      board.push(input.value)
+      setItem('board', board)
+    }
     input.value = ''
   }
 }
-function checkWork() {
+function checkWord() {
   console.log(input.value.length)
   if (input.value.length < 4) {
     return
@@ -116,22 +129,24 @@ function checkWork() {
     message.value = 'Please enter a valid word'
     return
   }
-  if (!input.value === word.value) {
+  if (input.value === word.value) {
     message.value = "That's right, you won!"
-    setItem('solved', 'true')
-    return
   }
+
   cells.value.forEach((c: HTMLElement, i) => {
-    if (!word.value.includes(c.innerText)) {
-      c.classList.add('wrong-letter')
-    }
-    if (word.value.includes(c.innerText) && word.value.indexOf(c.innerText) !== i) {
-      c.classList.add('wrong-place')
-    }
-    if (word.value.includes(c.innerText) && word.value.indexOf(c.innerText) === i) {
-      c.classList.add('right-letter')
-    }
+    setTimeout(() => {
+      if (!word.value.includes(c.innerText)) {
+        c.classList.add('checked', 'wrong-letter')
+      }
+      if (word.value.includes(c.innerText) && word.value[i] !== c.innerText) {
+        c.classList.add('checked', 'wrong-place')
+      }
+      if (word.value.includes(c.innerText) && word.value[i] === c.innerText) {
+        c.classList.add('checked', 'right-letter')
+      }
+    }, 500 * (i + 1))
   })
+
   getNextRow()
 }
 </script>
@@ -144,16 +159,37 @@ function checkWork() {
   grid-template-columns: repeat(5, minmax(100px, 1fr));
   grid-gap: 5px;
   margin-bottom: 5px;
-  font-size: 2.5rem;
+  font-size: 3rem;
+  font-weight: bold;
+}
+.checked {
+  animation: flip 500ms ease-in-out forwards;
+  color: white;
+}
+
+@keyframes flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  45% {
+    transform: rotateX(90deg);
+  }
+  55% {
+    transform: rotateX(90deg);
+  }
+
+  100% {
+    transform: rotateX(0deg);
+  }
 }
 .wrong-letter {
-  background: grey;
+  background: #787c7e;
 }
 .wrong-place {
-  background: yellow;
+  background: #c9b458;
 }
 .right-letter {
-  background: green;
+  background: #6aaa64;
 }
 #game-message {
   display: block;
