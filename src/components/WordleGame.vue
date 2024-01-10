@@ -69,7 +69,7 @@ onMounted(async () => {
           cells.value[i].innerText = w[i]
           currCellsInd.value++
         }
-        checkWord()
+        checkWord(true)
       })
       if (board.length === 5) {
         message.value = 'Come back tomorrow for a new word!'
@@ -120,7 +120,7 @@ function getNextRow() {
     input.value = ''
   }
 }
-function checkWord() {
+function checkWord(init = false) {
   console.log(input.value.length)
   if (input.value.length < 4) {
     return
@@ -134,20 +134,30 @@ function checkWord() {
   }
 
   cells.value.forEach((c: HTMLElement, i) => {
-    setTimeout(() => {
-      if (!word.value.includes(c.innerText)) {
-        c.classList.add('checked', 'wrong-letter')
-      }
-      if (word.value.includes(c.innerText) && word.value[i] !== c.innerText) {
-        c.classList.add('checked', 'wrong-place')
-      }
-      if (word.value.includes(c.innerText) && word.value[i] === c.innerText) {
-        c.classList.add('checked', 'right-letter')
-      }
-    }, 500 * (i + 1))
+    if (init) {
+      addClass(init, c, i)
+    } else {
+      setTimeout(() => {
+        addClass(init, c, i)
+      }, 400 * (i + 1))
+    }
   })
 
   getNextRow()
+}
+function addClass(init = false, c, i) {
+  if (!init) {
+    c.classList.add('checked')
+  }
+  if (!word.value.includes(c.innerText)) {
+    c.classList.add('wrong-letter')
+  }
+  if (word.value.includes(c.innerText) && word.value[i] !== c.innerText) {
+    c.classList.add('wrong-place')
+  }
+  if (word.value.includes(c.innerText) && word.value[i] === c.innerText) {
+    c.classList.add('right-letter')
+  }
 }
 </script>
 
@@ -163,19 +173,22 @@ function checkWord() {
   font-weight: bold;
 }
 .checked {
-  animation: flip 500ms ease-in-out forwards;
+  animation: flip 400ms ease-in-out forwards;
   color: white;
 }
 
 @keyframes flip {
   0% {
     transform: rotateX(0deg);
+    background: var(--background-color);
   }
   45% {
     transform: rotateX(90deg);
+    background: var(--background-color);
   }
   55% {
     transform: rotateX(90deg);
+    background: var(--background-color);
   }
 
   100% {
