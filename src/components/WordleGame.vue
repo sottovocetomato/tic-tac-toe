@@ -55,6 +55,9 @@ onMounted(async () => {
 // onUpdated(async () => {
 //   initGame()
 // })
+function timeout(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 function onKeyPressFn(e) {
   // console.log(e, 'e')
@@ -101,23 +104,21 @@ function checkWord(init = false) {
     return
   }
 
-  cells.value.forEach((c: HTMLElement, i) => {
-    if (init) {
-      addClass(init, c, i)
-    } else {
-      setTimeout(() => {
-        addClass(init, c, i)
-      }, 400 * (i + 1))
+  cells.value.forEach(async (c: HTMLElement, i) => {
+    await timeout((init ? 0 : 400) * (i + 1))
+    addClass(init, c, i)
+    if (i === 4) {
+      await timeout(400)
+      if (input.value === word.value) {
+        message.value = "That's right, you won!"
+      }
+      if (currRowNum.value === 4 && !message.value) {
+        message.value = 'See you tomorrow!'
+        showWord.value = true
+      }
+      getNextRow()
     }
   })
-  if (input.value === word.value) {
-    message.value = "That's right, you won!"
-  }
-  if (currRowNum.value === 4 && !message.value) {
-    message.value = 'See you tomorrow!'
-    showWord.value = true
-  }
-  getNextRow()
 }
 
 function initGame() {
@@ -139,7 +140,7 @@ function initGame() {
       }
       checkWord(true)
     })
-    if (board.length === 5) {
+    if (board.length >= 5) {
       message.value = 'Come back tomorrow for a new word!'
     }
     return
