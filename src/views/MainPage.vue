@@ -1,4 +1,6 @@
-<template><WordleGame /></template>
+<template>
+  <RouterLink to="tictactoe">TicTac</RouterLink><RouterLink to="wordle">Wordle</RouterLink>
+</template>
 
 <script>
 import TicTacToe from '../components/TicTacToe.vue'

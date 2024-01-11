@@ -17,7 +17,7 @@
       </button>
       <div class="grid">
         <div>
-          <label for="game-difficulty" class="select-label">Choose gridSize:</label>
+          <label for="game-difficulty" class="select-label">Choose grid size:</label>
           <select id="game-difficulty" @change="changeGridSize" :disabled="gameIsRunning">
             <option value="3">3x3</option>
             <option value="5">5x5</option>
@@ -71,10 +71,15 @@ const minimizerToken = 'O'
 
 const aiToken = computed<string>(() => (isAiFirst.value ? maximizerToken : minimizerToken))
 const playerToken = computed<string>(() => (isAiFirst.value ? minimizerToken : maximizerToken))
+const gridWrapWidth = computed<number>(() =>
+  gridWrap.value ? parseInt(window.getComputedStyle(gridWrap.value)?.width) : 450
+)
 
 const gridStyle = computed<{}>(() => ({
-  gridTemplateColumns: `repeat(${gridSize.value}, minmax(${450 / gridSize.value}px, 1fr))`,
-  fontSize: `${14 / gridSize.value}rem`,
+  gridTemplateColumns: `repeat(${gridSize.value}, minmax(${
+    gridWrapWidth.value / gridSize.value
+  }px, 1fr))`,
+  fontSize: `${gridWrapWidth.value / gridSize.value / 35}rem`,
   color: `${getScheme() === 'light' ? '#415462' : '#bbc6ce'}`
 }))
 
@@ -102,6 +107,7 @@ function changeGridSize(e: Event) {
 async function setupGridInteractions() {
   await nextTick(() => {
     gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid')
+    console.log(parseInt(window.getComputedStyle(gridWrap.value).width))
     let arr: (string | null)[] = []
     gridArr.value = []
     gridCollection.value.forEach((c: HTMLElement) => {
@@ -290,12 +296,17 @@ function minimax(
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100vh;
+  height: auto;
+  padding: 20px 0;
 }
 .game-grid {
   text-align: center;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
   /*font-size: 5rem;*/
   /*font-size: 1rem;*/
+  font-family: sans-serif;
   &-black {
     border: 1px solid #24333e;
   }
@@ -313,6 +324,7 @@ function minimax(
   align-items: center;
   button {
     width: 450px;
+    margin-bottom: 30px;
   }
   .grid {
     width: 100%;
@@ -333,6 +345,33 @@ function minimax(
   opacity: 0;
   &-show {
     opacity: 1;
+  }
+}
+@media (max-width: 995px) {
+  .game-controls {
+    width: 100%;
+  }
+}
+@media (max-width: 570px) {
+  .game-controls {
+    button {
+      width: 310px;
+    }
+  }
+  .grid-wrap {
+    width: 310px;
+    height: 310px;
+  }
+}
+@media (max-width: 360px) {
+  .game-controls {
+    button {
+      width: 210px;
+    }
+  }
+  .grid-wrap {
+    width: 210px;
+    height: 210px;
   }
 }
 </style>

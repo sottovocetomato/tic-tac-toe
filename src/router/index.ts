@@ -8,6 +8,18 @@ const router = createRouter({
       name: 'home',
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/MainPage.vue')
+    },
+    {
+      path: '/wordle',
+      name: 'wordle',
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../components/WordleGame.vue')
+    },
+    {
+      path: '/tictactoe',
+      name: 'tictactoe',
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../components/TicTacToe.vue')
     }
   ]
 })
