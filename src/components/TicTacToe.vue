@@ -292,6 +292,17 @@ function minimax(
   width: 100%;
   height: 100vh;
 }
+.game-grid {
+  text-align: center;
+  /*font-size: 5rem;*/
+  /*font-size: 1rem;*/
+  &-black {
+    border: 1px solid #24333e;
+  }
+  &-white {
+    border: 1px solid #bbc6ce;
+  }
+}
 .game-controls {
   margin: 15px 0;
   display: flex;

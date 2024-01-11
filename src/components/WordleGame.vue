@@ -1,27 +1,23 @@
 <template>
   <div class="game">
-    <h3 :id="`game-message${message ? '-show' : ''}`">{{ message }}</h3>
+    <h3 :class="`game-message game-message${message ? '-show' : ''}`">{{ message }}</h3>
+    <h4 :class="`word-message word-message${showWord ? '-show' : ''}`">{{ word }}</h4>
     <div
-      class="grid-wrap"
       ref="gridWrap"
       :style="gridStyle"
       v-for="row in 5"
       :key="row"
       data-row="row"
+      :class="`grid-wrap grid-wrap${getScheme() === 'light' ? '-black' : '-white'}`"
     >
-      <span
-        v-for="cell in 5"
-        :key="cell"
-        :data-cell="cell"
-        :class="`game-grid game-grid${getScheme() === 'light' ? '-black' : '-white'}`"
-      ></span>
+      <span v-for="cell in 5" :key="cell" :data-cell="cell" class="game-grid"></span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import useThemeSwitch from '../composables/useThemeSwitch.js'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUpdated, ref } from 'vue'
 import { WORDS } from '../collections/wordleWords'
 import { setItem, getItem } from '../utills/localStorage/storageHelper'
 
@@ -42,7 +38,7 @@ const rows = ref<NodeList | []>([])
 const message = ref<string>('')
 
 const input = ref<string>('')
-const solved = ref<boolean>(false)
+const showWord = ref<boolean>(false)
 
 // const timestamp = new Date().getTime()
 
@@ -52,39 +48,14 @@ onMounted(async () => {
     currRow.value = rows.value[currRowNum.value]
     cells.value = currRow.value?.querySelectorAll('.game-grid')
     window.addEventListener('keydown', (e) => onKeyPressFn(e))
-
-    let timestamp = getItem('timestamp')
-    let board = getItem('board')
-
-    const currTimestamp = new Date().getTime()
-    wordInd.value = getItem('id') || Math.floor(Math.random() * WORDS.length)
-    word.value = WORDS[wordInd.value].toUpperCase()
-
-    console.log(word.value, 'word')
-
-    if (timestamp && currTimestamp < timestamp && board.length) {
-      board.forEach((w) => {
-        input.value = w
-        for (let i = 0; i < w.length; i++) {
-          cells.value[i].innerText = w[i]
-          currCellsInd.value++
-        }
-        checkWord(true)
-      })
-      if (board.length === 5) {
-        message.value = 'Come back tomorrow for a new word!'
-      }
-      return
-    }
-
-    const time = new Date()
-    time.setDate(new Date().getDate() + 1)
-    timestamp = time.getTime()
-    setItem('timestamp', timestamp)
-    setItem('id', wordInd.value)
-    setItem('board', [])
+    initGame()
   })
 })
+
+// onUpdated(async () => {
+//   initGame()
+// })
+
 function onKeyPressFn(e) {
   // console.log(e, 'e')
   if (e.keyCode === 13) {
@@ -129,9 +100,6 @@ function checkWord(init = false) {
     message.value = 'Please enter a valid word'
     return
   }
-  if (input.value === word.value) {
-    message.value = "That's right, you won!"
-  }
 
   cells.value.forEach((c: HTMLElement, i) => {
     if (init) {
@@ -142,38 +110,100 @@ function checkWord(init = false) {
       }, 400 * (i + 1))
     }
   })
-
+  if (input.value === word.value) {
+    message.value = "That's right, you won!"
+  }
+  if (currRowNum.value === 4 && !message.value) {
+    message.value = 'See you tomorrow!'
+    showWord.value = true
+  }
   getNextRow()
 }
+
+function initGame() {
+  let timestamp = getItem('timestamp')
+  let board = getItem('board')
+
+  const currTimestamp = new Date().getTime()
+  wordInd.value = getItem('id') || Math.floor(Math.random() * WORDS.length)
+  word.value = WORDS[wordInd.value].toUpperCase()
+
+  console.log(word.value, 'word')
+
+  if (timestamp && currTimestamp < timestamp && board.length) {
+    board.forEach((w) => {
+      input.value = w
+      for (let i = 0; i < w.length; i++) {
+        cells.value[i].innerText = w[i]
+        currCellsInd.value++
+      }
+      checkWord(true)
+    })
+    if (board.length === 5) {
+      message.value = 'Come back tomorrow for a new word!'
+    }
+    return
+  }
+
+  const time = new Date()
+  time.setDate(new Date().getDate() + 1)
+  timestamp = time.getTime()
+  setItem('timestamp', timestamp)
+  setItem('id', wordInd.value)
+  setItem('board', [])
+}
+
 function addClass(init = false, c, i) {
   if (!init) {
-    c.classList.add('checked')
+    c.classList.add('flip')
   }
   if (!word.value.includes(c.innerText)) {
-    c.classList.add('wrong-letter')
+    c.classList.add('checked', 'wrong-letter')
   }
   if (word.value.includes(c.innerText) && word.value[i] !== c.innerText) {
-    c.classList.add('wrong-place')
+    c.classList.add('checked', 'wrong-place')
   }
   if (word.value.includes(c.innerText) && word.value[i] === c.innerText) {
-    c.classList.add('right-letter')
+    c.classList.add('checked', 'right-letter')
   }
 }
 </script>
 
 <style scoped lang="scss">
+.game {
+  padding: 20px 0;
+}
 .grid-wrap {
-  width: 500px;
+  width: 550px;
   height: 100px;
-  /*height: 600px;*/
   grid-template-columns: repeat(5, minmax(100px, 1fr));
   grid-gap: 5px;
   margin-bottom: 5px;
   font-size: 3rem;
   font-weight: bold;
 }
-.checked {
+.game-grid {
+  text-align: center;
+  height: 100px;
+  line-height: 90px;
+  border-radius: 5px;
+}
+.grid-wrap {
+  &-white {
+    .game-grid {
+      border: 1px solid white;
+    }
+  }
+  &-black {
+    .game-grid {
+      border: 1px solid black;
+    }
+  }
+}
+.flip {
   animation: flip 400ms ease-in-out forwards;
+}
+.checked {
   color: white;
 }
 
@@ -204,15 +234,41 @@ function addClass(init = false, c, i) {
 .right-letter {
   background: #6aaa64;
 }
-#game-message {
+.game-message {
   display: block;
   height: 60px;
   opacity: 0;
+  text-align: center;
+  margin-bottom: 20px;
   &-show {
     opacity: 1;
   }
 }
-.game-grid {
-  border-radius: 5px;
+.word-message {
+  display: block;
+  height: 40px;
+  opacity: 0;
+  text-align: center;
+  &-show {
+    opacity: 1;
+  }
 }
+@media (max-width: 768px) {
+  .grid-wrap {
+    width: 95%;
+    height: 70px;
+    grid-template-columns: repeat(5, minmax(50px, 1fr));
+    grid-gap: 5px;
+    margin-bottom: 5px;
+    font-size: 2.5rem;
+    font-weight: bold;
+  }
+  .game-grid {
+    height: 70px;
+    line-height: 70px;
+  }
+  .word-message {
+    margin-bottom: 10px;
+  }
+} ;
 </style>
