@@ -39,6 +39,7 @@ const message = ref<string>('')
 
 const input = ref<string>('')
 const showWord = ref<boolean>(false)
+const solved = ref<string>('false')
 
 // const timestamp = new Date().getTime()
 
@@ -59,10 +60,10 @@ function timeout(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function onKeyPressFn(e) {
+async function onKeyPressFn(e) {
   // console.log(e, 'e')
   if (e.keyCode === 13) {
-    checkWord()
+    await checkWord()
     return
   }
   if (e.keyCode === 8) {
@@ -94,8 +95,7 @@ function getNextRow() {
     input.value = ''
   }
 }
-function checkWord(init = false) {
-  console.log(input.value.length)
+async function checkWord(init = false) {
   if (input.value.length < 4) {
     return
   }
@@ -104,27 +104,32 @@ function checkWord(init = false) {
     return
   }
 
-  cells.value.forEach(async (c: HTMLElement, i) => {
-    await timeout((init ? 0 : 400) * (i + 1))
+  for (const [i, c] of cells.value.entries()) {
+    const time = init ? 0 : 400
+    await timeout(time)
     addClass(init, c, i)
+
     if (i === 4) {
-      await timeout(400)
-      if (input.value === word.value) {
+      if (input.value === word.value && solved.value !== 'true') {
+        await timeout(400)
         message.value = "That's right, you won!"
+        setItem('solved', true)
       }
-      if (currRowNum.value === 4 && !message.value) {
+      if (currRowNum.value > 4 && solved.value !== 'true') {
+        await timeout(400)
         message.value = 'See you tomorrow!'
         showWord.value = true
+        setItem('solved', 'true')
       }
       getNextRow()
     }
-  })
+  }
 }
 
-function initGame() {
+async function initGame() {
   let timestamp = getItem('timestamp')
   let board = getItem('board')
-
+  solved.value = getItem('solved')
   const currTimestamp = new Date().getTime()
   wordInd.value = getItem('id') || Math.floor(Math.random() * WORDS.length)
   word.value = WORDS[wordInd.value].toUpperCase()
@@ -132,15 +137,15 @@ function initGame() {
   console.log(word.value, 'word')
 
   if (timestamp && currTimestamp < timestamp && board.length) {
-    board.forEach((w) => {
+    for (const w of board) {
       input.value = w
       for (let i = 0; i < w.length; i++) {
         cells.value[i].innerText = w[i]
         currCellsInd.value++
       }
-      checkWord(true)
-    })
-    if (board.length >= 5) {
+      await checkWord(true)
+    }
+    if (solved.value != 'false') {
       message.value = 'Come back tomorrow for a new word!'
     }
     return
@@ -151,6 +156,7 @@ function initGame() {
   timestamp = time.getTime()
   setItem('timestamp', timestamp)
   setItem('id', wordInd.value)
+  setItem('solved', 'false')
   setItem('board', [])
 }
 
