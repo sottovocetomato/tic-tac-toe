@@ -115,7 +115,7 @@ async function checkWord(init = false) {
         message.value = "That's right, you won!"
         setItem('solved', true)
       }
-      if (currRowNum.value > 4 && solved.value !== 'true') {
+      if (currRowNum.value >= 4 && solved.value !== 'true') {
         await timeout(400)
         message.value = 'See you tomorrow!'
         showWord.value = true
@@ -145,7 +145,7 @@ async function initGame() {
       }
       await checkWord(true)
     }
-    if (solved.value != 'false') {
+    if (solved.value !== 'false') {
       message.value = 'Come back tomorrow for a new word!'
     }
     return
