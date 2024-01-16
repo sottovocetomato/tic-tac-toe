@@ -56,17 +56,17 @@ onMounted(async () => {
 // onUpdated(async () => {
 //   initGame()
 // })
-function timeout(ms) {
+function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function onKeyPressFn(e) {
-  // console.log(e, 'e')
-  if (e.keyCode === 13) {
+async function onKeyPressFn(e: KeyboardEvent) {
+  console.log(e, 'e')
+  if (e.key === 'Enter' || e.key === 'NumpadEnter') {
     await checkWord()
     return
   }
-  if (e.keyCode === 8) {
+  if (e.key === 'Backspace') {
     if (!input.value) return
     if (message.value) message.value = ''
     input.value = input.value.slice(0, input.value.length - 1)
