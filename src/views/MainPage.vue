@@ -25,6 +25,7 @@
           <circle cx="18" cy="18" r="2" /></svg
       ></RouterLink>
       <RouterLink to="wordle" class="game-link" id="wordle">Wordle</RouterLink>
+      <RouterLink to="snake" class="game-link">Snake</RouterLink>
     </div>
   </div>
 </template>
@@ -52,7 +53,7 @@ import WordleGame from '../components/WordleGame.vue'
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 10px;
+  margin: 0 20px;
   &:hover {
     animation: shake 1.5s ease infinite;
   }

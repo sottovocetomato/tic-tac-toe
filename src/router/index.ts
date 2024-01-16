@@ -20,6 +20,12 @@ const router = createRouter({
       name: 'tictactoe',
       // which is lazy-loaded when the route is visited.
       component: () => import('../components/TicTacToe.vue')
+    },
+    {
+      path: '/snake',
+      name: 'snake',
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../components/Snake.vue')
     }
   ]
 })
