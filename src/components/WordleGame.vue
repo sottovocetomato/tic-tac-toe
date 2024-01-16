@@ -30,7 +30,7 @@ const gridStyle = computed<{}>(() => ({
 
 const word = ref<string>('')
 const wordInd = ref<number>(0)
-const currRow = ref<NodeList | []>([])
+const currRow = ref<HTMLDivElement | null>(null)
 const currRowNum = ref<number>(0)
 const currCellsInd = ref<number>(0)
 const cells = ref<NodeList | []>([])
@@ -61,7 +61,6 @@ function timeout(ms: number) {
 }
 
 async function onKeyPressFn(e: KeyboardEvent) {
-  console.log(e, 'e')
   if (e.key === 'Enter' || e.key === 'NumpadEnter') {
     await checkWord()
     return
@@ -95,7 +94,7 @@ function getNextRow() {
     input.value = ''
   }
 }
-async function checkWord(init = false) {
+async function checkWord(init: boolean = false) {
   if (input.value.length < 4) {
     return
   }
@@ -107,7 +106,7 @@ async function checkWord(init = false) {
   for (const [i, c] of cells.value.entries()) {
     const time = init ? 0 : 400
     await timeout(time)
-    addClass(init, c, i)
+    addClass(init, c as HTMLElement, i)
 
     if (i === 4) {
       if (input.value === word.value && solved.value !== 'true') {
@@ -134,8 +133,6 @@ async function initGame() {
   wordInd.value = getItem('id') || Math.floor(Math.random() * WORDS.length)
   word.value = WORDS[wordInd.value].toUpperCase()
 
-  console.log(word.value, 'word')
-
   if (timestamp && currTimestamp < timestamp && board.length) {
     for (const w of board) {
       input.value = w
@@ -146,7 +143,7 @@ async function initGame() {
       await checkWord(true)
     }
     if (solved.value !== 'false') {
-      message.value = 'Come back tomorrow for a new word!'
+      message.value = 'Come back tomorrow for a new challenge!'
     }
     return
   }
@@ -160,7 +157,7 @@ async function initGame() {
   setItem('board', [])
 }
 
-function addClass(init = false, c, i) {
+function addClass(init: boolean = false, c: HTMLElement, i: number) {
   if (!init) {
     c.classList.add('flip')
   }
