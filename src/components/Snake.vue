@@ -7,6 +7,7 @@
       height="500"
       style="border: 1px solid white"
     ></canvas>
+    <h3 v-show="gameOver">You lost</h3>
   </div>
 </template>
 
@@ -15,14 +16,17 @@ import { nextTick, onMounted, ref } from 'vue'
 
 const gameField = ref<HTMLCanvasElement | null>(null)
 const gameInterval = ref<number | null>(null)
-let ctx: CanvasRenderingContext2D = null
+const gameIsRunning = ref<boolean>(false)
+const gameOver = ref<boolean>(false)
+const score = ref<number>(0)
+let ctx: CanvasRenderingContext2D
 const unitSize = 25
 let xVelocity = unitSize
 let yVelocity = 0
 
-const gameTick = 500
-const gameFieldWidth = 500
-const gameFieldHeight = 500
+const gameTick = 250
+let gameFieldWidth
+let gameFieldHeight
 
 let foodX
 let foodY
@@ -37,20 +41,39 @@ const snake = [
 onMounted(async () => {
   await nextTick(() => {
     ctx = gameField.value?.getContext('2d')
-    window.addEventListener('keydown', (e) => handleKeys(e))
+    gameFieldWidth = gameField.value?.width
+    gameFieldHeight = gameField.value?.height
+    window.addEventListener('keydown', (e) => debounce(handleKeys)(e))
     clearCanvas()
     createFood()
-    gameInterval.value = setInterval(() => {
+    gameIsRunning.value = true
+    startGame()
+    // drawSnake()
+  })
+})
+
+function debounce(fn) {
+  let timeout
+  return function (...args) {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => fn(...args), gameTick / 3)
+  }
+}
+
+function RandCoordinate(min, max) {
+  return Math.round((Math.random() * (max - min) + min) / unitSize) * unitSize
+}
+function startGame() {
+  gameInterval.value = setInterval(() => {
+    if (gameIsRunning.value) {
       clearCanvas()
       drawFood()
       moveSnake()
       drawSnake()
-    }, gameTick)
-  })
-})
-
-function RandCoordinate(min, max) {
-  return Math.round((Math.random() * (max - min) + min) / unitSize) * unitSize
+    } else {
+      clearInterval(gameInterval.value as number)
+    }
+  }, gameTick)
 }
 function drawSnake() {
   // console.log(snake)
@@ -65,8 +88,16 @@ function moveSnake() {
   ctx.fillStyle = '#1db953'
   ctx.strokeStyle = '#eaeaea'
   const head = { x: snake[0].x + xVelocity, y: snake[0].y + yVelocity }
-  snake.unshift(head)
-  snake.pop()
+  checkGameOver(head)
+  if (gameIsRunning.value) {
+    snake.unshift(head)
+    if (head.x === foodX && head.y === foodY) {
+      score.value++
+      createFood()
+      return
+    }
+    snake.pop()
+  }
 }
 function createFood() {
   foodX = RandCoordinate(0, gameFieldWidth - unitSize)
@@ -85,7 +116,7 @@ function handleKeys(e: KeyboardEvent) {
   const goingDown = yVelocity == unitSize
   const goingRight = xVelocity == unitSize
   const goingLeft = xVelocity == -unitSize
-  console.log(goingUp)
+
   switch (true) {
     case e.key === 'ArrowUp' && !goingDown:
       xVelocity = 0
@@ -94,7 +125,6 @@ function handleKeys(e: KeyboardEvent) {
     case e.key === 'ArrowDown' && !goingUp:
       xVelocity = 0
       yVelocity = unitSize
-      console.log('hello')
       break
     case e.key === 'ArrowLeft' && !goingRight:
       xVelocity = -unitSize
@@ -105,7 +135,20 @@ function handleKeys(e: KeyboardEvent) {
       yVelocity = 0
       break
   }
-  console.log(yVelocity, xVelocity)
+}
+function checkGameOver(head) {
+  if (head.x >= gameFieldWidth || head.x < 0 || head.y >= gameFieldHeight || head.y < 0) {
+    console.log(snake[0].x)
+    gameIsRunning.value = false
+    gameOver.value = true
+  }
+
+  for (let i = 0; i < snake.length; i++) {
+    if (snake[i].x === head.x && snake[i].y === head.y) {
+      gameIsRunning.value = false
+      gameOver.value = true
+    }
+  }
 }
 </script>
 
