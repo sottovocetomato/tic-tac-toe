@@ -1,24 +1,30 @@
 <template>
   <div class="game">
     <div class="score">
-      <h5>{{ score }}</h5>
-      <h5>{{ attempts }}</h5>
+      <h4>Score: {{ score }}</h4>
+      <h4>Attempts: {{ attempts }}</h4>
     </div>
     <canvas
       ref="gameField"
       id="game-field"
       width="500"
       height="500"
-      style="border: 1px solid white"
-    ></canvas>
+      :class="`${gameOver ? 'blur' : ''}`"
+      :style="`border: 4px solid ${getScheme() === 'light' ? '#11191f' : '#efefef'}`"
+    >
+    </canvas>
+    <div class="overlay" v-show="gameOver"></div>
+    <div id="gameOverText">
+      <h2 v-show="gameOver">Game Over!</h2>
+    </div>
     <button class="contrast control-button" @click="restartGame">Restart</button>
-    <h3 v-show="gameOver">You lost</h3>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
-
+import { computed, nextTick, onMounted, ref } from 'vue'
+import useThemeSwitch from '@/composables/useThemeSwitch'
+const { getScheme } = useThemeSwitch()
 const gameField = ref<HTMLCanvasElement | null>(null)
 const gameInterval = ref<number | null>(null)
 const gameIsRunning = ref<boolean>(false)
@@ -27,6 +33,10 @@ const isPaused = ref<boolean>(false)
 const score = ref<number>(0)
 const attempts = ref<number>(0)
 const hasMoved = ref<boolean>(false)
+
+const cellFillColor = computed(() => (getScheme() === 'light' ? '#efefef' : '#234977'))
+const cellStrokeColor = computed(() => (getScheme() === 'light' ? '#202f3b' : '#eaeaea'))
+
 let ctx: CanvasRenderingContext2D
 const unitSize = 25
 let xVelocity = unitSize
@@ -77,8 +87,8 @@ function startGame() {
 }
 function drawSnake() {
   // console.log(snake)
-  ctx.fillStyle = '#1db953'
-  ctx.strokeStyle = '#eaeaea'
+  ctx.fillStyle = cellFillColor.value
+  ctx.strokeStyle = cellStrokeColor.value
   snake.forEach((r) => {
     ctx.fillRect(r.x, r.y, unitSize, unitSize)
     ctx.strokeRect(r.x, r.y, unitSize, unitSize)
@@ -86,8 +96,6 @@ function drawSnake() {
 }
 function moveSnake() {
   hasMoved.value = false
-  ctx.fillStyle = '#1db953'
-  ctx.strokeStyle = '#eaeaea'
   const head = { x: snake[0].x + xVelocity, y: snake[0].y + yVelocity }
   checkGameOver(head)
   if (gameIsRunning.value) {
@@ -105,8 +113,10 @@ function createFood() {
   foodY = RandCoordinate(0, gameFieldWidth - unitSize)
 }
 function drawFood() {
-  ctx.fillStyle = '#b91d1d'
+  ctx.fillStyle = cellFillColor.value
+  ctx.strokeStyle = cellStrokeColor.value
   ctx.fillRect(foodX, foodY, unitSize, unitSize)
+  ctx.strokeRect(foodX, foodY, unitSize, unitSize)
 }
 function clearCanvas() {
   ctx.clearRect(0, 0, gameFieldWidth, gameFieldHeight)
@@ -124,6 +134,8 @@ function restartGame() {
   clearCanvas()
   createFood()
   gameIsRunning.value = true
+  gameOver.value = false
+  isPaused.value = false
   startGame()
 }
 function handleKeys(e: KeyboardEvent) {
@@ -179,18 +191,45 @@ function checkGameOver(head) {
 <style scoped lang="scss">
 .game {
   display: flex;
+
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 90vh;
   padding: 20px 0;
+  position: relative;
+  h3,
+  h4,
+  h2,
+  h5,
+  button {
+    font-family: 'Silkscreen', sans-serif !important;
+  }
 }
+
 .score {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 500px;
+  width: 508px;
+  h4 {
+    margin-bottom: 10px;
+  }
+}
+
+#gameOverText {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  h2 {
+    font-size: 2.5rem;
+    text-shadow: 3px 2px black;
+  }
+}
+.blur {
+  filter: blur(5px);
 }
 .control-button {
   margin: 25px 0;
