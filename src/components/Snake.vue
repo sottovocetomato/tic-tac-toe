@@ -16,6 +16,7 @@
     <div class="overlay" v-show="gameOver"></div>
     <div id="gameOverText">
       <h2 v-show="gameOver">Game Over!</h2>
+      <h3 v-show="gameOver">Your best score: {{ bestScore }}</h3>
     </div>
     <button class="contrast control-button" @click="restartGame">Restart</button>
   </div>
@@ -24,6 +25,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import useThemeSwitch from '@/composables/useThemeSwitch'
+import { getItem, setItem } from '@/utills/localStorage/storageHelper'
 const { getScheme } = useThemeSwitch()
 const gameField = ref<HTMLCanvasElement | null>(null)
 const gameInterval = ref<number | null>(null)
@@ -33,6 +35,7 @@ const isPaused = ref<boolean>(false)
 const score = ref<number>(0)
 const attempts = ref<number>(0)
 const hasMoved = ref<boolean>(false)
+const bestScore = ref<number | undefined>(getItem('snakeBestScore'))
 
 const cellFillColor = computed(() => (getScheme() === 'light' ? '#efefef' : '#234977'))
 const cellStrokeColor = computed(() => (getScheme() === 'light' ? '#202f3b' : '#eaeaea'))
@@ -172,17 +175,23 @@ function handleKeys(e: KeyboardEvent) {
       break
   }
 }
+function setGameOver() {
+  gameIsRunning.value = false
+  gameOver.value = true
+  if (!bestScore.value || bestScore.value < score.value) {
+    bestScore.value = score.value
+    setItem('snakeBestScore', bestScore.value as number)
+    return
+  }
+}
 function checkGameOver(head) {
   if (head.x >= gameFieldWidth || head.x < 0 || head.y >= gameFieldHeight || head.y < 0) {
-    console.log(snake[0].x)
-    gameIsRunning.value = false
-    gameOver.value = true
+    setGameOver()
   }
 
   for (let i = 0; i < snake.length; i++) {
     if (snake[i].x === head.x && snake[i].y === head.y) {
-      gameIsRunning.value = false
-      gameOver.value = true
+      setGameOver()
     }
   }
 }
