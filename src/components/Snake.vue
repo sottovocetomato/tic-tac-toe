@@ -18,7 +18,8 @@
       <h2 v-show="gameOver">Game Over!</h2>
       <h3 v-show="gameOver">Your best score: {{ bestScore }}</h3>
     </div>
-    <button class="contrast control-button" @click="restartGame">Restart</button>
+    <button v-if="!gameIsRunning" class="contrast control-button" @click="startGame">Start</button>
+    <button v-else class="contrast control-button" @click="restartGame">Restart</button>
   </div>
 </template>
 
@@ -26,6 +27,8 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import useThemeSwitch from '@/composables/useThemeSwitch'
 import { getItem, setItem } from '@/utills/localStorage/storageHelper'
+import IconBase from '@/components/icons/IconBase.vue'
+import IconBack from '@/components/icons/IconBack.vue'
 const { getScheme } = useThemeSwitch()
 const gameField = ref<HTMLCanvasElement | null>(null)
 const gameInterval = ref<number | null>(null)
@@ -52,23 +55,20 @@ let gameFieldHeight
 let foodX
 let foodY
 
-let snake = [
+const snakeModel = [
   { x: unitSize * 3, y: 0 },
   { x: unitSize * 2, y: 0 },
   { x: unitSize, y: 0 },
   { x: 0, y: 0 }
 ]
 
+let snake
 onMounted(async () => {
   await nextTick(() => {
     ctx = gameField.value?.getContext('2d')
     gameFieldWidth = gameField.value?.width
     gameFieldHeight = gameField.value?.height
     window.addEventListener('keydown', (e) => handleKeys(e))
-    clearCanvas()
-    createFood()
-    gameIsRunning.value = true
-    startGame()
     // drawSnake()
   })
 })
@@ -77,6 +77,12 @@ function RandCoordinate(min, max) {
   return Math.round((Math.random() * (max - min) + min) / unitSize) * unitSize
 }
 function startGame() {
+  gameOver.value = false
+  gameIsRunning.value = true
+  attempts.value++
+  clearCanvas()
+  createFood()
+  snake = [...snakeModel]
   gameInterval.value = setInterval(() => {
     if (gameIsRunning.value && !isPaused.value) {
       clearCanvas()
@@ -126,17 +132,9 @@ function clearCanvas() {
 }
 function restartGame() {
   clearInterval(gameInterval.value as number)
-  snake = [
-    { x: unitSize * 3, y: 0 },
-    { x: unitSize * 2, y: 0 },
-    { x: unitSize, y: 0 },
-    { x: 0, y: 0 }
-  ]
+  snake = [...snakeModel]
   score.value = 0
   attempts.value++
-  clearCanvas()
-  createFood()
-  gameIsRunning.value = true
   gameOver.value = false
   isPaused.value = false
   startGame()
