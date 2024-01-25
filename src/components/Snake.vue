@@ -29,6 +29,9 @@ import useThemeSwitch from '@/composables/useThemeSwitch'
 import { getItem, setItem } from '@/utills/localStorage/storageHelper'
 import IconBase from '@/components/icons/IconBase.vue'
 import IconBack from '@/components/icons/IconBack.vue'
+
+type SnakeCell = { x: number; y: number }
+
 const { getScheme } = useThemeSwitch()
 const gameField = ref<HTMLCanvasElement | null>(null)
 const gameInterval = ref<number | null>(null)
@@ -42,38 +45,39 @@ const bestScore = ref<number | undefined>(getItem('snakeBestScore'))
 
 const cellFillColor = computed(() => (getScheme() === 'light' ? '#efefef' : '#234977'))
 const cellStrokeColor = computed(() => (getScheme() === 'light' ? '#202f3b' : '#eaeaea'))
+const unitSize = 25
 
 let ctx: CanvasRenderingContext2D
-const unitSize = 25
-let xVelocity
-let yVelocity
+
+let xVelocity: number,
+  yVelocity: number,
+  gameFieldWidth: number,
+  gameFieldHeight: number,
+  foodX: number,
+  foodY: number
 
 const gameTick = 100
-let gameFieldWidth
-let gameFieldHeight
 
-let foodX
-let foodY
-
-const snakeModel = [
+const snakeModel: SnakeCell[] = [
   { x: unitSize * 3, y: 0 },
   { x: unitSize * 2, y: 0 },
   { x: unitSize, y: 0 },
   { x: 0, y: 0 }
 ]
 
-let snake
+let snake: SnakeCell[]
 onMounted(async () => {
   await nextTick(() => {
     ctx = gameField.value?.getContext('2d')
-    gameFieldWidth = gameField.value?.width
-    gameFieldHeight = gameField.value?.height
+    if (!ctx) throw new Error("Can't get context!")
+    gameFieldWidth = gameField.value?.width || 500
+    gameFieldHeight = gameField.value?.height || 500
     window.addEventListener('keydown', (e) => handleKeys(e))
     // drawSnake()
   })
 })
 
-function RandCoordinate(min, max) {
+function RandCoordinate(min: number, max: number) {
   return Math.round((Math.random() * (max - min) + min) / unitSize) * unitSize
 }
 function startGame() {
@@ -98,7 +102,6 @@ function startGame() {
   }, gameTick)
 }
 function drawSnake() {
-  // console.log(snake)
   ctx.fillStyle = cellFillColor.value
   ctx.strokeStyle = cellStrokeColor.value
   snake.forEach((r) => {
@@ -140,7 +143,6 @@ function restartGame() {
   startGame()
 }
 function handleKeys(e: KeyboardEvent) {
-  console.log(e)
   if (e.code === 'Space') {
     isPaused.value = !isPaused.value
   }
@@ -182,7 +184,7 @@ function setGameOver() {
     return
   }
 }
-function checkGameOver(head) {
+function checkGameOver(head: SnakeCell) {
   if (head.x >= gameFieldWidth || head.x < 0 || head.y >= gameFieldHeight || head.y < 0) {
     setGameOver()
   }

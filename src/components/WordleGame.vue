@@ -30,11 +30,11 @@ const gridStyle = computed<{}>(() => ({
 
 const word = ref<string>('')
 const wordInd = ref<number>(0)
-const currRow = ref<HTMLDivElement | null>(null)
+const currRow = ref<HTMLElement | null>(null)
 const currRowNum = ref<number>(0)
 const currCellsInd = ref<number>(0)
-const cells = ref<NodeList | []>([])
-const rows = ref<NodeList | []>([])
+const cells = ref<NodeListOf<HTMLElement> | []>([])
+const rows = ref<NodeListOf<HTMLElement> | []>([])
 const message = ref<string>('')
 
 const input = ref<string>('')

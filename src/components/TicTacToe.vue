@@ -53,13 +53,15 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import useThemeSwitch from '@/composables/useThemeSwitch'
 
+type Move = { r: number; c: number }
+
 const { getScheme } = useThemeSwitch()
 
 type gridBoard = (string | null)[][]
 
 const gridSize = ref<number>(3)
 const gridWrap = ref<HTMLDivElement | null>(null)
-const gridCollection = ref<NodeList | []>([])
+const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
 
 const isAiFirst = ref<boolean>(false)
@@ -87,7 +89,7 @@ const gameIsRunning = ref<boolean>(false)
 const gamesPlayed = ref<number>(0)
 const playerTurn = ref<boolean>(true)
 
-const scoreMap = { X: 10, O: -10, tie: 0 }
+const scoreMap: { [index: string]: any } = { X: 10, O: -10, tie: 0 }
 
 const winner = ref<string>('')
 
@@ -106,11 +108,11 @@ function changeGridSize(e: Event) {
 
 async function setupGridInteractions() {
   await nextTick(() => {
-    gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid')
-    console.log(parseInt(window.getComputedStyle(gridWrap.value).width))
+    gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid') || []
+
     let arr: (string | null)[] = []
     gridArr.value = []
-    gridCollection.value.forEach((c: HTMLElement) => {
+    gridCollection.value.forEach((c) => {
       arr.push(null)
       if (arr.length === gridSize.value) {
         gridArr.value?.push(arr)
@@ -128,7 +130,7 @@ function startGame() {
   if (gamesPlayed.value)
     if (gamesPlayed.value > 0) {
       winner.value = ''
-      gridCollection.value.forEach((c: HTMLElement) => (c.innerText = ''))
+      gridCollection.value.forEach((c) => (c.innerText = ''))
       for (let r = 0; r < gridArr.value.length; r++) {
         for (let c = 0; c < gridArr.value[r].length; c++) {
           gridArr.value[r][c] = null
@@ -147,13 +149,16 @@ function startGame() {
 
 function playerMove(c: HTMLElement) {
   // console.log(!!c.innerText, 'c.innerText')
+  if (!c) return
   if (!playerTurn.value || c.innerText || winner.value || !gameIsRunning.value) return
   c.innerText = playerToken.value
-  const row = Math.ceil(c.dataset.id / gridSize.value) - 1
-  const column =
-    c.dataset.id % gridSize.value ? (c.dataset.id % gridSize.value) - 1 : gridSize.value - 1
+  const cellId = parseInt(c!.dataset!.id || '')
+  if (isNaN(cellId)) return
+  const row = Math.ceil(cellId / gridSize.value) - 1
+  const column = cellId % gridSize.value ? (cellId % gridSize.value) - 1 : gridSize.value - 1
+
   gridArr.value[row][column] = playerToken.value
-  winner.value = checkWin(gridArr.value)
+  winner.value = checkWin(gridArr.value) || ''
   if (winner.value) {
     gameIsRunning.value = false
     return
@@ -166,10 +171,10 @@ function cpuMove() {
   if (winner.value || !gameIsRunning.value) return
   const board = JSON.parse(JSON.stringify(gridArr.value))
   const { move } = minimax(board, 0, isAiFirst.value, -Infinity, Infinity)
-
-  gridArr.value[move.r][move.c] = aiToken.value
-  gridCollection.value[gridSize.value * move.r + move.c].innerText = aiToken.value
-  winner.value = checkWin(gridArr.value)
+  if (move === null) return
+  gridArr.value[move!.r][move!.c] = aiToken.value
+  gridCollection.value[gridSize.value * move!.r + move!.c].innerText = aiToken.value
+  winner.value = checkWin(gridArr.value) || ''
   if (winner.value) {
     gameIsRunning.value = false
     return
@@ -243,14 +248,14 @@ function minimax(
 ) {
   const result = checkWin(board)
   if (depth > gameDepth.value) return { score: 0 }
-  if (scoreMap[result] != null) {
+  if (result !== null && scoreMap[result] != null) {
     if (result === 'tie') return { score: scoreMap[result] }
     const evaluated = result === aiToken.value ? scoreMap[result] - depth : scoreMap[result] + depth
     return { score: evaluated }
   }
   if (isMaximizing) {
     let bestScore = -Infinity
-    let move = {}
+    let move: Move = { r: -1, c: -1 }
     for (let r = 0; r < board.length; r++) {
       for (let c = 0; c < board[r].length; c++) {
         const curBoard = JSON.parse(JSON.stringify(board))
@@ -269,7 +274,7 @@ function minimax(
     return { score: bestScore, move }
   } else {
     let bestScore = Infinity
-    let move = {}
+    let move: Move = { r: -1, c: -1 }
     for (let r = 0; r < board.length; r++) {
       for (let c = 0; c < board[r].length; c++) {
         const curBoard = JSON.parse(JSON.stringify(board))

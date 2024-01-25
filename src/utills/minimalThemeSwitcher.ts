@@ -24,7 +24,7 @@ const themeSwitcher = {
   get schemeFromLocalStorage() {
     if (typeof window.localStorage !== 'undefined') {
       if (window.localStorage.getItem(this.localStorageKey) !== null) {
-        return window.localStorage.getItem(this.localStorageKey)
+        return window.localStorage.getItem(this.localStorageKey) || 'light'
       }
     }
     return this._scheme
@@ -44,16 +44,15 @@ const themeSwitcher = {
       (event) => {
         event.preventDefault()
         // Set scheme
-        this.scheme = button.getAttribute(this.buttonAttribute)
+        this.scheme = button.getAttribute(this.buttonAttribute) || 'light'
         // Close dropdown
-        console.log(this.scheme, 'this scheme')
       },
       false
     )
   },
 
   // Set scheme
-  set scheme(scheme) {
+  set scheme(scheme: string) {
     if (scheme == 'auto') {
       this.preferredColorScheme == 'dark' ? (this._scheme = 'dark') : (this._scheme = 'light')
     } else if (scheme == 'dark' || scheme == 'light') {
@@ -70,7 +69,7 @@ const themeSwitcher = {
 
   // Apply scheme
   applyScheme() {
-    document.querySelector('html').setAttribute(this.rootAttribute, this.scheme)
+    document.querySelector('html')?.setAttribute(this.rootAttribute, this.scheme)
   },
 
   // Store scheme to local storage

@@ -9,7 +9,7 @@ const localStorageKey = 'picoPreferredColorScheme'
 export default function useThemeSwitch() {
   // Init
   const init = () => {
-    setScheme(schemeFromLocalStorage())
+    setScheme(schemeFromLocalStorage() as string)
     initSwitchers()
   }
 
@@ -59,7 +59,7 @@ export default function useThemeSwitch() {
 
   // Apply scheme
   const applyScheme = () => {
-    document.querySelector('html').setAttribute(rootAttribute, getScheme())
+    document.querySelector('html')?.setAttribute(rootAttribute, getScheme())
   }
 
   // Store scheme to local storage

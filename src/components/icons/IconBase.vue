@@ -17,10 +17,10 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  width?: number
-  height?: number
+  width?: number | string
+  height?: number | string
   viewBox?: string
-  iconName: string
+  iconName?: string
   iconColor?: string
 }>()
 </script>
