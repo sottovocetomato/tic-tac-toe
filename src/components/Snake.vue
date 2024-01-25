@@ -45,8 +45,8 @@ const cellStrokeColor = computed(() => (getScheme() === 'light' ? '#202f3b' : '#
 
 let ctx: CanvasRenderingContext2D
 const unitSize = 25
-let xVelocity = unitSize
-let yVelocity = 0
+let xVelocity
+let yVelocity
 
 const gameTick = 100
 let gameFieldWidth
@@ -78,8 +78,11 @@ function RandCoordinate(min, max) {
 }
 function startGame() {
   gameOver.value = false
+  score.value = 0
   gameIsRunning.value = true
   attempts.value++
+  xVelocity = unitSize
+  yVelocity = 0
   clearCanvas()
   createFood()
   snake = [...snakeModel]
@@ -133,9 +136,6 @@ function clearCanvas() {
 function restartGame() {
   clearInterval(gameInterval.value as number)
   snake = [...snakeModel]
-  score.value = 0
-  attempts.value++
-  gameOver.value = false
   isPaused.value = false
   startGame()
 }
