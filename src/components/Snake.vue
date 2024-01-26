@@ -68,8 +68,11 @@ const snakeModel: SnakeCell[] = [
 let snake: SnakeCell[]
 onMounted(async () => {
   await nextTick(() => {
-    ctx = gameField.value?.getContext('2d')
-    if (!ctx) throw new Error("Can't get context!")
+    const res = gameField.value!.getContext('2d')
+    if (!res || !(res instanceof CanvasRenderingContext2D)) {
+      throw new Error('Failed to get 2D context')
+    }
+    ctx = res
     gameFieldWidth = gameField.value?.width || 500
     gameFieldHeight = gameField.value?.height || 500
     window.addEventListener('keydown', (e) => handleKeys(e))

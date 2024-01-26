@@ -40,7 +40,7 @@
         <div>
           <label for="game-difficulty" class="select-label">Choose ai difficulty:</label>
           <select id="game-difficulty" @change="changeDifficulty" :disabled="gameIsRunning">
-            <option value="2">Medium</option>
+            <option value="1">Medium</option>
             <option value="4">Hard</option>
           </select>
         </div>
@@ -255,7 +255,7 @@ function minimax(
   }
   if (isMaximizing) {
     let bestScore = -Infinity
-    let move: Move = { r: -1, c: -1 }
+    let move: Move = { r: 0, c: 0 }
     for (let r = 0; r < board.length; r++) {
       for (let c = 0; c < board[r].length; c++) {
         const curBoard = JSON.parse(JSON.stringify(board))
@@ -274,7 +274,7 @@ function minimax(
     return { score: bestScore, move }
   } else {
     let bestScore = Infinity
-    let move: Move = { r: -1, c: -1 }
+    let move: Move = { r: 0, c: 0 }
     for (let r = 0; r < board.length; r++) {
       for (let c = 0; c < board[r].length; c++) {
         const curBoard = JSON.parse(JSON.stringify(board))
