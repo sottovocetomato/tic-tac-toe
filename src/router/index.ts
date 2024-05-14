@@ -7,7 +7,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       // which is lazy-loaded when the route is visited.
-      component: () => import('../views/MainPage.vue')
+      component: () => import('../components/Sudoku.vue')
     },
     {
       path: '/wordle',
