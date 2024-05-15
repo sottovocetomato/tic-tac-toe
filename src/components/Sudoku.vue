@@ -4,14 +4,14 @@
     <!--      <h3>{{ winner?.toUpperCase() }} {{ winner !== 'tie' ? 'wins!' : '!' }}</h3>-->
     <!--    </div>-->
     <div class="grid-wrap" ref="gridWrap" :key="gridSize">
-      <div v-for="cellWrap in gridSize" :key="cellWrap" class="grid-cells-wrap">
-        <input
-          v-for="cell in gridSize"
-          :key="cell"
-          :data-id="cell"
-          :class="`game-grid game-grid${getScheme() === 'light' ? '-black' : '-white'}`"
-        />
-      </div>
+      <input
+        v-for="(cell, ind) in gridSize * gridSize"
+        :key="cell"
+        :data-id="cell"
+        :class="`game-grid game-grid${getScheme() === 'light' ? '-black' : '-white'} ${
+          (ind + 1) % 3 === 0 && (ind + 1) % 9 !== 0 ? 'vertical-margin' : ''
+        } ${(ind > 17 && ind < 27) || (ind > 44 && ind < 54) ? 'horizontal-margin' : ''}`"
+      />
     </div>
     <div class="game-controls">
       <!--      <button @click="startGame" class="contrast control-button">-->
@@ -64,13 +64,6 @@ const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
 const gridWrapWidth = 450
 
-const gridStyle = computed<{}>(() => ({
-  gridTemplateColumns: `repeat(${gridSize.value}, 160px))`,
-  gridTemplateRows: `repeat(3, 160px))`,
-  fontSize: `${gridWrapWidth / gridSize.value / 35}rem`,
-  color: `${getScheme() === 'light' ? '#415462' : '#bbc6ce'}`
-}))
-
 onMounted(async () => await setupGridInteractions())
 async function setupGridInteractions() {
   await nextTick(() => {
@@ -89,6 +82,65 @@ async function setupGridInteractions() {
       // })
     })
   })
+}
+//Проверка грида по вертикали
+//Проверка грида по горизонтали
+//Проверка бокса грида
+//Заполнение грида
+function fillCells(board) {
+  const emptyCell = findEmpty(board)
+  if (!emptyCell) {
+    return
+  }
+  const filledBoard = fillEmptyCell(emptyCell, board)
+  if (!filledBoard) {
+    return
+  }
+  fillCells(filledBoard)
+}
+
+function findEmpty(board) {
+  let empty = null
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
+      if (empty) return
+      if (!board[r][c]?.value) {
+        empty = [r, c]
+      }
+    }
+  }
+  return empty
+}
+function fillEmptyCell(cell, board) {
+  const [y, x] = cell
+  const currBoard = JSON.parse(JSON.stringify(board))
+  for (let n = 0; n < 9; n++) {
+    currBoard[y][x].value = n
+    const horizontalCheck = checkHorizontal(currBoard, y, n)
+    const verticalCheck = checkVertical(currBoard, x, n)
+    const boxCheck = checkBox(currBoard, x, y, n)
+    if (horizontalCheck && verticalCheck && boxCheck) return currBoard
+  }
+  return false
+}
+
+function checkHorizontal(board, y, n) {
+  for (let c = 0; c < board[y].length; c++) {
+    if (board[y][c].value === n) return false
+  }
+  return true
+}
+function checkVertical(board, x, n) {
+  for (let r = 0; r < board[x].length; r++) {
+    if (board[r][x].value === n) return false
+  }
+  return true
+}
+function checkBox(board, x, y, n) {
+  for (let r = 0; r < board[x].length; r++) {
+    if (board[r][x].value === n) return false
+  }
+  return true
 }
 </script>
 
@@ -145,12 +197,29 @@ input {
   }
 }
 .grid-wrap {
-  width: 480px;
-  height: 480px;
-  grid-template-columns: repeat(3, 160px);
-  grid-template-rows: repeat(3, 160px);
+  width: 490px;
+  height: 490px;
+  //grid-template-columns: repeat(9, 50px);
+  //grid-template-rows: repeat(9, 50px);
+  //grid-row-gap: 5px;
+  //grid-column-gap: 5px;
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+.game-grid {
+  margin-right: 2px;
+  margin-bottom: 2px;
 }
 .game-grid:hover {
   cursor: pointer;
+}
+.vertical-margin {
+  margin-right: 10px !important;
+}
+.horizontal-margin {
+  margin-bottom: 10px !important;
 }
 </style>
