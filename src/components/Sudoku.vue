@@ -8,6 +8,8 @@
         v-for="(cell, ind) in gridSize * gridSize"
         :key="cell"
         :data-id="cell"
+        @input="(e) => checkAnswer(e, ind)"
+        :value="gridArr[Math.floor(ind / 9)]?.[ind % 9]"
         :class="`game-grid game-grid${getScheme() === 'light' ? '-black' : '-white'} ${
           (ind + 1) % 3 === 0 && (ind + 1) % 9 !== 0 ? 'vertical-margin' : ''
         } ${(ind > 17 && ind < 27) || (ind > 44 && ind < 54) ? 'horizontal-margin' : ''}`"
@@ -62,7 +64,32 @@ const gridSize = ref<number>(9)
 const gridWrap = ref<HTMLDivElement | null>(null)
 const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
+const solvedPuzzle = ref<number[]>([])
 const gridWrapWidth = 450
+
+// const bd1 = [
+//   [null, null, null, 2, 6, null, 7, null, 1],
+//   [6, 8, null, null, 7, null, null, 9, null],
+//   [1, 9, null, null, null, 4, 5, null, null],
+//   [8, 2, null, 1, null, null, null, 4, null],
+//   [null, null, 4, 6, null, 2, 9, null, null],
+//   [null, 5, null, null, null, 3, null, 2, 8],
+//   [null, null, 9, 3, null, null, null, 7, 4],
+//   [null, 4, null, null, 5, null, null, 3, 6],
+//   [7, null, 3, null, 1, 8, null, null, null]
+// ]
+
+const bd1 = [
+  [1, null, null, 4, 8, 9, null, null, 6],
+  [7, 3, null, null, null, null, null, 4, null],
+  [null, null, null, null, null, 1, 2, 9, 5],
+  [null, null, 7, 1, 2, null, 6, null, null],
+  [5, null, null, 7, null, 3, null, null, 8],
+  [null, null, 6, null, 9, 5, 7, null, null],
+  [9, 1, 4, 6, null, null, null, null, null],
+  [null, 2, null, null, null, null, null, 3, 7],
+  [8, null, null, 5, 1, 2, null, null, 4]
+]
 
 onMounted(async () => await setupGridInteractions())
 async function setupGridInteractions() {
@@ -70,75 +97,100 @@ async function setupGridInteractions() {
     gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid') || []
 
     let arr: (string | null)[] = []
-    gridArr.value = []
-    gridCollection.value.forEach((c) => {
-      arr.push(null)
-      if (arr.length === gridSize.value) {
-        gridArr.value?.push(arr)
-        arr = []
-      }
-      // c.addEventListener('click', () => {
-      //   playerMove(c)
-      // })
-    })
+    gridArr.value = bd1
+    fillCells(gridArr.value)
+    // gridArr.value = []
+    // gridCollection.value.forEach((c) => {
+    //   arr.push(null)
+    //   if (arr.length === gridSize.value) {
+    //     gridArr.value?.push(arr)
+    //     arr = []
+    //   }
+    // c.addEventListener('click', () => {
+    //   playerMove(c)
+    // })
+    // })
   })
 }
 //Проверка грида по вертикали
 //Проверка грида по горизонтали
 //Проверка бокса грида
 //Заполнение грида
+function checkAnswer(e, ind) {
+  const check = e.target.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+  e.target.classList.add(check ? 'right-answer' : 'wrong-answer')
+  e.target.classList.remove(check ? 'wrong-answer' : 'right-answer')
+}
 function fillCells(board) {
-  const emptyCell = findEmpty(board)
-  if (!emptyCell) {
-    return
-  }
-  const filledBoard = fillEmptyCell(emptyCell, board)
+  const filledBoard = fillEmptyCell(board)
+  console.log(filledBoard, 'filledBoard')
   if (!filledBoard) {
     return
   }
-  fillCells(filledBoard)
+  solvedPuzzle.value = filledBoard
+  // gridArr.value = filledBoard
 }
 
 function findEmpty(board) {
   let empty = null
   for (let r = 0; r < board.length; r++) {
     for (let c = 0; c < board[r].length; c++) {
-      if (empty) return
-      if (!board[r][c]?.value) {
+      if (empty) break
+      if (!board[r][c]) {
         empty = [r, c]
       }
     }
   }
   return empty
 }
-function fillEmptyCell(cell, board) {
-  const [y, x] = cell
+function fillEmptyCell(board) {
+  const emptyCell = findEmpty(board)
+  console.log(emptyCell, 'emptyCell')
+  if (!emptyCell) {
+    return board
+  }
+  const [y, x] = emptyCell
   const currBoard = JSON.parse(JSON.stringify(board))
-  for (let n = 0; n < 9; n++) {
-    currBoard[y][x].value = n
+  // console.log(currBoard, 'currBoard')
+  // console.log(emptyCell, 'emptyCell')
+  for (let n = 1; n < 10; n++) {
+    // console.log(n, 'number')
     const horizontalCheck = checkHorizontal(currBoard, y, n)
     const verticalCheck = checkVertical(currBoard, x, n)
     const boxCheck = checkBox(currBoard, x, y, n)
-    if (horizontalCheck && verticalCheck && boxCheck) return currBoard
+    // console.log(n, horizontalCheck, verticalCheck, boxCheck)
+    if (horizontalCheck && verticalCheck && boxCheck) {
+      currBoard[y][x] = n
+      const res = fillEmptyCell(currBoard)
+      if (res) return res
+    }
   }
   return false
 }
 
 function checkHorizontal(board, y, n) {
   for (let c = 0; c < board[y].length; c++) {
-    if (board[y][c].value === n) return false
+    if (board[y][c] === n) return false
   }
   return true
 }
 function checkVertical(board, x, n) {
   for (let r = 0; r < board[x].length; r++) {
-    if (board[r][x].value === n) return false
+    // console.log(board[r][x], r, x, 'board[r][x]')
+    if (board[r][x] === n) return false
   }
   return true
 }
 function checkBox(board, x, y, n) {
-  for (let r = 0; r < board[x].length; r++) {
-    if (board[r][x].value === n) return false
+  const r1 = Math.floor(y / 3) * 3
+  const r2 = Math.floor(y / 3) * 3 + 3
+  const c1 = Math.floor(x / 3) * 3
+  const c2 = Math.floor(x / 3) * 3 + 3
+  // console.log(r1, r2, c1, c2)
+  for (let r = r1; r < r2; r++) {
+    for (let c = c1; c < c2; c++) {
+      if (board[r][c] === n) return false
+    }
   }
   return true
 }
@@ -221,5 +273,11 @@ input {
 }
 .horizontal-margin {
   margin-bottom: 10px !important;
+}
+.wrong-answer {
+  background: rgba(255, 0, 0, 0.36);
+}
+.right-answer {
+  background: rgba(64, 255, 0, 0.18);
 }
 </style>
