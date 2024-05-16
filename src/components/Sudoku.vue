@@ -3,7 +3,7 @@
     <!--    <div :id="`winner-message${winner ? '-show' : ''}`">-->
     <!--      <h3>{{ winner?.toUpperCase() }} {{ winner !== 'tie' ? 'wins!' : '!' }}</h3>-->
     <!--    </div>-->
-    <div class="grid-wrap" ref="gridWrap" :key="gridSize">
+    <div class="grid-wrap" ref="gridWrap" :key="wrapKey">
       <input
         v-for="(cell, ind) in gridSize * gridSize"
         :key="cell"
@@ -20,34 +20,13 @@
       <!--        {{ !gameIsRunning ? 'Start' : 'Restart' }}-->
       <!--      </button>-->
       <div class="grid">
-        <!--        <div>-->
-        <!--          <label for="game-difficulty" class="select-label">Choose grid size:</label>-->
-        <!--          <select id="game-difficulty" @change="changeGridSize" :disabled="gameIsRunning">-->
-        <!--            <option value="3">3x3</option>-->
-        <!--            <option value="5">5x5</option>-->
-        <!--            &lt;!&ndash;    <option value="10">10x10</option>&ndash;&gt;-->
-        <!--          </select>-->
-        <!--        </div>-->
-        <!--        <div>-->
-        <!--          <label for="starting-player" class="select-label">Choose starting player:</label>-->
-        <!--          <select-->
-        <!--            id="starting-player"-->
-        <!--            @change="(e) => changeStartingP(e)"-->
-        <!--            :disabled="gameIsRunning"-->
-        <!--            required-->
-        <!--          >-->
-        <!--            <option value="human">Human</option>-->
-        <!--            <option value="ai">Ai</option>-->
-        <!--          </select>-->
-        <!--        </div>-->
-
-        <!--        <div>-->
-        <!--          <label for="game-difficulty" class="select-label">Choose ai difficulty:</label>-->
-        <!--          <select id="game-difficulty" @change="changeDifficulty" :disabled="gameIsRunning">-->
-        <!--            <option value="1">Medium</option>-->
-        <!--            <option value="4">Hard</option>-->
-        <!--          </select>-->
-        <!--        </div>-->
+        <button
+          @click="() => generateSudoku()"
+          :class="`contrast control-button ${generating ? 'disabled' : ''}`"
+          :disabled="generating"
+        >
+          Generate Sudoku
+        </button>
       </div>
     </div>
   </div>
@@ -65,70 +44,59 @@ const gridWrap = ref<HTMLDivElement | null>(null)
 const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
 const solvedPuzzle = ref<number[]>([])
-const gridWrapWidth = 450
-
-// const bd1 = [
-//   [null, null, null, 2, 6, null, 7, null, 1],
-//   [6, 8, null, null, 7, null, null, 9, null],
-//   [1, 9, null, null, null, 4, 5, null, null],
-//   [8, 2, null, 1, null, null, null, 4, null],
-//   [null, null, 4, 6, null, 2, 9, null, null],
-//   [null, 5, null, null, null, 3, null, 2, 8],
-//   [null, null, 9, 3, null, null, null, 7, 4],
-//   [null, 4, null, null, 5, null, null, 3, 6],
-//   [7, null, 3, null, 1, 8, null, null, null]
-// ]
-
-const bd1 = [
-  [1, null, null, 4, 8, 9, null, null, 6],
-  [7, 3, null, null, null, null, null, 4, null],
-  [null, null, null, null, null, 1, 2, 9, 5],
-  [null, null, 7, 1, 2, null, 6, null, null],
-  [5, null, null, 7, null, 3, null, null, 8],
-  [null, null, 6, null, 9, 5, 7, null, null],
-  [9, 1, 4, 6, null, null, null, null, null],
-  [null, 2, null, null, null, null, null, 3, 7],
-  [8, null, null, 5, 1, 2, null, null, 4]
-]
+const wrapKey = ref(0)
+const generating = ref(false)
 
 onMounted(async () => await setupGridInteractions())
 async function setupGridInteractions() {
   await nextTick(() => {
     gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid') || []
 
-    let arr: (string | null)[] = []
-    gridArr.value = bd1
-    fillCells(gridArr.value)
-    // gridArr.value = []
-    // gridCollection.value.forEach((c) => {
-    //   arr.push(null)
-    //   if (arr.length === gridSize.value) {
-    //     gridArr.value?.push(arr)
-    //     arr = []
-    //   }
-    // c.addEventListener('click', () => {
-    //   playerMove(c)
-    // })
-    // })
+    generateSudoku()
   })
 }
-//Проверка грида по вертикали
-//Проверка грида по горизонтали
-//Проверка бокса грида
-//Заполнение грида
+
 function checkAnswer(e, ind) {
   const check = e.target.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
   e.target.classList.add(check ? 'right-answer' : 'wrong-answer')
   e.target.classList.remove(check ? 'wrong-answer' : 'right-answer')
 }
-function fillCells(board) {
+
+function generateSudoku(limit = 30) {
+  const sudokuField = Array.from(Array(9), () => new Array(9).fill(null))
+  let numbersDone = 0
+  generating.value = true
+  while (numbersDone < limit) {
+    const x = Math.floor(Math.random() * 9)
+    const y = Math.floor(Math.random() * 9)
+    const number = Math.floor(Math.random() * 9) + 1
+
+    if (!sudokuField[y][x]) {
+      const isValid = checkDuplicateNumbers(sudokuField, x, y, number)
+      if (isValid) {
+        sudokuField[y][x] = number
+        numbersDone++
+      }
+    }
+  }
+
+  const canSolve = solveSudoku(sudokuField)
+  if (!canSolve) {
+    generateSudoku()
+  } else {
+    gridArr.value = sudokuField
+    wrapKey.value++
+    generating.value = false
+  }
+}
+
+function solveSudoku(board) {
   const filledBoard = fillEmptyCell(board)
-  console.log(filledBoard, 'filledBoard')
   if (!filledBoard) {
-    return
+    return false
   }
   solvedPuzzle.value = filledBoard
-  // gridArr.value = filledBoard
+  return true
 }
 
 function findEmpty(board) {
@@ -145,27 +113,29 @@ function findEmpty(board) {
 }
 function fillEmptyCell(board) {
   const emptyCell = findEmpty(board)
-  console.log(emptyCell, 'emptyCell')
+
   if (!emptyCell) {
     return board
   }
   const [y, x] = emptyCell
   const currBoard = JSON.parse(JSON.stringify(board))
-  // console.log(currBoard, 'currBoard')
-  // console.log(emptyCell, 'emptyCell')
+
   for (let n = 1; n < 10; n++) {
-    // console.log(n, 'number')
-    const horizontalCheck = checkHorizontal(currBoard, y, n)
-    const verticalCheck = checkVertical(currBoard, x, n)
-    const boxCheck = checkBox(currBoard, x, y, n)
-    // console.log(n, horizontalCheck, verticalCheck, boxCheck)
-    if (horizontalCheck && verticalCheck && boxCheck) {
+    const isValid = checkDuplicateNumbers(currBoard, x, y, n)
+    if (isValid) {
       currBoard[y][x] = n
       const res = fillEmptyCell(currBoard)
       if (res) return res
     }
   }
   return false
+}
+
+function checkDuplicateNumbers(currBoard, x, y, n) {
+  const horizontalCheck = checkHorizontal(currBoard, y, n)
+  const verticalCheck = checkVertical(currBoard, x, n)
+  const boxCheck = checkBox(currBoard, x, y, n)
+  return horizontalCheck && verticalCheck && boxCheck
 }
 
 function checkHorizontal(board, y, n) {
@@ -176,7 +146,6 @@ function checkHorizontal(board, y, n) {
 }
 function checkVertical(board, x, n) {
   for (let r = 0; r < board[x].length; r++) {
-    // console.log(board[r][x], r, x, 'board[r][x]')
     if (board[r][x] === n) return false
   }
   return true
