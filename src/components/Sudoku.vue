@@ -3,6 +3,7 @@
     <!--    <div :id="`winner-message${winner ? '-show' : ''}`">-->
     <!--      <h3>{{ winner?.toUpperCase() }} {{ winner !== 'tie' ? 'wins!' : '!' }}</h3>-->
     <!--    </div>-->
+    <h3 :id="`winner-message${puzzleSolved ? '-show' : ''}`">Congrats! You solved this puzzle!</h3>
     <div class="grid-wrap" ref="gridWrap" :key="wrapKey">
       <input
         v-for="(cell, ind) in gridSize * gridSize"
@@ -19,15 +20,33 @@
       <!--      <button @click="startGame" class="contrast control-button">-->
       <!--        {{ !gameIsRunning ? 'Start' : 'Restart' }}-->
       <!--      </button>-->
-      <div class="grid">
+      <div class="game-controls-grid">
         <button
-          @click="() => generateSudoku()"
-          :class="`contrast control-button ${generating ? 'disabled' : ''}`"
-          :disabled="generating"
+          @click="() => setGenerationLimit(30)"
+          :class="`contrast control-button ${generationLimit === 30 ? 'active' : ''}`"
         >
-          Generate Sudoku
+          Easy
+        </button>
+        <button
+          @click="() => setGenerationLimit(22)"
+          :class="`contrast control-button ${generationLimit === 22 ? 'active' : ''}`"
+        >
+          Medium
+        </button>
+        <button
+          @click="() => setGenerationLimit(15)"
+          :class="`contrast control-button ${generationLimit === 15 ? 'active' : ''}`"
+        >
+          Hard
         </button>
       </div>
+      <button
+        @click="onSudokuGenerate"
+        :class="`contrast control-button ${generating ? 'disabled' : ''}`"
+        :disabled="generating"
+      >
+        Generate Sudoku
+      </button>
     </div>
   </div>
 </template>
@@ -44,28 +63,75 @@ const gridWrap = ref<HTMLDivElement | null>(null)
 const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
 const solvedPuzzle = ref<number[]>([])
+const generatedPuzzle = ref<number[]>([])
 const wrapKey = ref(0)
 const generating = ref(false)
+const puzzleSolved = ref(false)
+const generationLimit = ref(30)
 
-onMounted(async () => await setupGridInteractions())
-async function setupGridInteractions() {
+onMounted(async () => await setupSudoku())
+
+function doubleRaf(callback) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(callback)
+  })
+}
+
+function setGenerationLimit(limit) {
+  generationLimit.value = limit
+}
+async function setupSudoku() {
+  const savedBoard = JSON.parse(localStorage.getItem('savedBoard') || 'null')
+  const puzzleInProgress = JSON.parse(localStorage.getItem('puzzleInProgress') || 'null')
+  await nextTick(async () => {
+    if (savedBoard) {
+      gridArr.value = puzzleInProgress || savedBoard.puzzle
+      generatedPuzzle.value = savedBoard.puzzle
+      solvedPuzzle.value = savedBoard.solvedPuzzle
+    } else {
+      onSudokuGenerate()
+    }
+  })
   await nextTick(() => {
     gridCollection.value = gridWrap.value?.querySelectorAll('.game-grid') || []
-
-    generateSudoku()
+    checkLoadedBoard()
   })
 }
 
 function checkAnswer(e, ind) {
+  if (!e.target.value) {
+    if (e.target.classList.contains('wrong-answer') || e.target.classListcontains('right-answer'))
+      e.target.classList.remove(
+        e.target.classList.contains('wrong-answer') ? 'wrong-answer' : 'right-answer'
+      )
+    return
+  }
+  if (isNaN(parseInt(e.target.value)) || parseInt(e.target.value) > 9) {
+    e.target.value = ''
+    return
+  }
   const check = e.target.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+  gridArr.value[Math.floor(ind / 9)][ind % 9] = e.target.value
+  localStorage.setItem('puzzleInProgress', JSON.stringify(gridArr.value))
+
   e.target.classList.add(check ? 'right-answer' : 'wrong-answer')
   e.target.classList.remove(check ? 'wrong-answer' : 'right-answer')
+  checkSolved()
 }
 
-function generateSudoku(limit = 30) {
-  const sudokuField = Array.from(Array(9), () => new Array(9).fill(null))
-  let numbersDone = 0
+function onSudokuGenerate() {
   generating.value = true
+  doubleRaf(() => {
+    sudokuGenerator(generationLimit.value)
+    generating.value = false
+  })
+}
+
+function sudokuGenerator(limit = 30) {
+  const sudokuField = Array.from(Array(9), () => new Array(9).fill(null))
+  wrapKey.value++
+  let numbersDone = 0
+  // console.log(generating.value, 'generating.value')
   while (numbersDone < limit) {
     const x = Math.floor(Math.random() * 9)
     const y = Math.floor(Math.random() * 9)
@@ -82,11 +148,15 @@ function generateSudoku(limit = 30) {
 
   const canSolve = solveSudoku(sudokuField)
   if (!canSolve) {
-    generateSudoku()
+    sudokuGenerator(generationLimit.value)
   } else {
     gridArr.value = sudokuField
-    wrapKey.value++
-    generating.value = false
+    generatedPuzzle.value = sudokuField
+    const boardToSave = {
+      puzzle: sudokuField,
+      solvedPuzzle: solvedPuzzle.value
+    }
+    localStorage.setItem('savedBoard', JSON.stringify(boardToSave))
   }
 }
 
@@ -163,6 +233,23 @@ function checkBox(board, x, y, n) {
   }
   return true
 }
+
+function checkLoadedBoard() {
+  gridCollection.value.forEach((el, ind) => {
+    const initialVal = el.value == generatedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    const check = el.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    if (!initialVal && el.value) el.classList.add(check ? 'right-answer' : 'wrong-answer')
+  })
+}
+
+function checkSolved() {
+  let win = true
+  gridCollection.value.forEach((el, ind) => {
+    const check = el.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    if (!check) win = false
+  })
+  puzzleSolved.value = !!win
+}
 </script>
 
 <style scoped lang="scss">
@@ -213,8 +300,13 @@ input {
     width: 450px;
     margin-bottom: 30px;
   }
-  .grid {
-    width: 100%;
+  .game-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 150px);
+    grid-column-gap: 20px;
+    button {
+      width: 150px;
+    }
   }
 }
 .grid-wrap {
@@ -248,5 +340,41 @@ input {
 }
 .right-answer {
   background: rgba(64, 255, 0, 0.18);
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+#winner-message {
+  height: auto;
+  opacity: 0;
+  &-show {
+    opacity: 1;
+  }
+}
+
+.game-controls {
+  margin: 15px 0;
+  display: flex;
+  width: 850px;
+  /*height: 150px;*/
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  button {
+    width: 450px;
+    margin-bottom: 30px;
+  }
+  .grid {
+    width: 100%;
+  }
+}
+.control-button.active {
+  filter: opacity(0.6);
 }
 </style>
