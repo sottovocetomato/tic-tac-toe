@@ -62,8 +62,8 @@ const gridSize = ref<number>(9)
 const gridWrap = ref<HTMLDivElement | null>(null)
 const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
-const solvedPuzzle = ref<number[]>([])
-const generatedPuzzle = ref<number[]>([])
+const solvedPuzzle = ref<number[][]>([])
+const generatedPuzzle = ref<number[][]>([])
 const wrapKey = ref(0)
 const generating = ref(false)
 const puzzleSolved = ref(false)
@@ -98,24 +98,26 @@ async function setupSudoku() {
   })
 }
 
-function checkAnswer(e: Event & HTMLInputElement, ind: number) {
-  if (!e.target.value) {
-    if (e.target.classList.contains('wrong-answer') || e.target.classListcontains('right-answer'))
-      e.target.classList.remove(
-        e.target.classList.contains('wrong-answer') ? 'wrong-answer' : 'right-answer'
+function checkAnswer(e: Event, ind: number) {
+  const target = e.target as HTMLInputElement
+  if (!target) return
+  if (!target.value) {
+    if (target.classList.contains('wrong-answer') || target.classList.contains('right-answer'))
+      target.classList.remove(
+        target.classList.contains('wrong-answer') ? 'wrong-answer' : 'right-answer'
       )
     return
   }
-  if (isNaN(parseInt(e.target.value)) || parseInt(e.target.value) > 9) {
-    e.target.value = ''
+  if (isNaN(parseInt(target.value)) || parseInt(target.value) > 9) {
+    target.value = ''
     return
   }
-  const check = e.target.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
-  gridArr.value[Math.floor(ind / 9)][ind % 9] = e.target.value
+  const check = +target.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+  gridArr.value[Math.floor(ind / 9)][ind % 9] = target.value
   localStorage.setItem('puzzleInProgress', JSON.stringify(gridArr.value))
 
-  e.target.classList.add(check ? 'right-answer' : 'wrong-answer')
-  e.target.classList.remove(check ? 'wrong-answer' : 'right-answer')
+  target.classList.add(check ? 'right-answer' : 'wrong-answer')
+  target.classList.remove(check ? 'wrong-answer' : 'right-answer')
   checkSolved()
 }
 
@@ -166,16 +168,18 @@ function sudokuGenerator(limit = 30) {
   }
 }
 
-function solveSudoku(board) {
+function solveSudoku(board: number[][]) {
   const filledBoard = fillEmptyCell(board)
   if (!filledBoard) {
     return false
   }
-  solvedPuzzle.value = filledBoard
-  return true
+  if (filledBoard && Array.isArray(filledBoard)) {
+    solvedPuzzle.value = filledBoard || []
+    return true
+  }
 }
 
-function findEmpty(board) {
+function findEmpty(board: number[][]) {
   let empty = null
   for (let r = 0; r < board.length; r++) {
     for (let c = 0; c < board[r].length; c++) {
@@ -187,7 +191,7 @@ function findEmpty(board) {
   }
   return empty
 }
-function fillEmptyCell(board) {
+function fillEmptyCell(board: number[][]): number[][] | boolean {
   const emptyCell = findEmpty(board)
 
   if (!emptyCell) {
@@ -200,33 +204,33 @@ function fillEmptyCell(board) {
     const isValid = checkDuplicateNumbers(currBoard, x, y, n)
     if (isValid) {
       currBoard[y][x] = n
-      const res = fillEmptyCell(currBoard)
+      const res: number[][] | boolean = fillEmptyCell(currBoard)
       if (res) return res
     }
   }
   return false
 }
 
-function checkDuplicateNumbers(currBoard, x, y, n) {
+function checkDuplicateNumbers(currBoard: number[][], x: number, y: number, n: number) {
   const horizontalCheck = checkHorizontal(currBoard, y, n)
   const verticalCheck = checkVertical(currBoard, x, n)
   const boxCheck = checkBox(currBoard, x, y, n)
   return horizontalCheck && verticalCheck && boxCheck
 }
 
-function checkHorizontal(board, y, n) {
+function checkHorizontal(board: number[][], y: number, n: number) {
   for (let c = 0; c < board[y].length; c++) {
     if (board[y][c] === n) return false
   }
   return true
 }
-function checkVertical(board, x, n) {
+function checkVertical(board: number[][], x: number, n: number) {
   for (let r = 0; r < board[x].length; r++) {
     if (board[r][x] === n) return false
   }
   return true
 }
-function checkBox(board, x, y, n) {
+function checkBox(board: number[][], x: number, y: number, n: number) {
   const r1 = Math.floor(y / 3) * 3
   const r2 = Math.floor(y / 3) * 3 + 3
   const c1 = Math.floor(x / 3) * 3
@@ -242,16 +246,19 @@ function checkBox(board, x, y, n) {
 
 function checkLoadedBoard() {
   gridCollection.value.forEach((el, ind) => {
-    const initialVal = el.value == generatedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
-    const check = el.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
-    if (!initialVal && el.value) el.classList.add(check ? 'right-answer' : 'wrong-answer')
+    const element = el as HTMLInputElement
+    const initialVal = +element.value === generatedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    const check = +element.value === solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    if (!initialVal && element.value) element.classList.add(check ? 'right-answer' : 'wrong-answer')
   })
 }
 
 function checkSolved() {
   let win = true
   gridCollection.value.forEach((el, ind) => {
-    const check = el.value == solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    const check: boolean =
+      parseInt((el as HTMLInputElement).value) ===
+      solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
     if (!check) win = false
   })
   puzzleSolved.value = !!win
