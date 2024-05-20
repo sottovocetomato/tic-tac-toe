@@ -1,13 +1,18 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
+
   "include": [
     "env.d.ts",
     "src/**/*",
     "src/**/*.vue",
-    "node_modules/@vue/runtime-core/dist/runtime-core.d.ts"
+    "node_modules/@vue/runtime-core/dist/runtime-core.d.ts",
+    "../../../../Program Files/JetBrains/WebStorm 2022.1/plugins/JavaScriptLanguage/jsLanguageServicesImpl/external/lib.es5.d.ts"
   ],
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
+    "isolatedModules": true,
+    "types": ["vite/client", "web"],
+    "target": "ESNext",
     "composite": true,
     "noEmit": true,
     "baseUrl": ".",

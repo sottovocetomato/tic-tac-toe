@@ -28,6 +28,9 @@
       <RouterLink to="snake" class="game-link"
         ><IconBase width="64" height="64" viewBox="0 0 511.999 511.999"><IconSnake /></IconBase
       ></RouterLink>
+      <RouterLink to="sudoku" class="game-link"
+        ><IconBase width="80" height="80" viewBox="0 0 48 48"><IconSudoku /></IconBase
+      ></RouterLink>
     </div>
   </div>
 </template>
@@ -37,6 +40,7 @@ import TicTacToe from '../components/TicTacToe.vue'
 import WordleGame from '../components/WordleGame.vue'
 import IconBase from '../components/icons/IconBase.vue'
 import IconSnake from '../components/icons/IconSnake.vue'
+import IconSudoku from '../components/icons/IconSudoku.vue'
 </script>
 
 <style scoped lang="scss">

@@ -71,13 +71,13 @@ const generationLimit = ref(30)
 
 onMounted(async () => await setupSudoku())
 
-function doubleRaf(callback) {
+function doubleRaf(callback: () => void) {
   requestAnimationFrame(() => {
     requestAnimationFrame(callback)
   })
 }
 
-function setGenerationLimit(limit) {
+function setGenerationLimit(limit: number) {
   generationLimit.value = limit
 }
 async function setupSudoku() {
@@ -98,7 +98,7 @@ async function setupSudoku() {
   })
 }
 
-function checkAnswer(e, ind) {
+function checkAnswer(e: Event & HTMLInputElement, ind: number) {
   if (!e.target.value) {
     if (e.target.classList.contains('wrong-answer') || e.target.classListcontains('right-answer'))
       e.target.classList.remove(
@@ -124,7 +124,17 @@ function onSudokuGenerate() {
   doubleRaf(() => {
     sudokuGenerator(generationLimit.value)
     generating.value = false
+    localStorage.setItem('puzzleInProgress', JSON.stringify(null))
+    saveBoardToLocalStorage()
   })
+}
+
+function saveBoardToLocalStorage() {
+  const boardToSave = {
+    puzzle: generatedPuzzle.value,
+    solvedPuzzle: solvedPuzzle.value
+  }
+  localStorage.setItem('savedBoard', JSON.stringify(boardToSave))
 }
 
 function sudokuGenerator(limit = 30) {
@@ -152,11 +162,7 @@ function sudokuGenerator(limit = 30) {
   } else {
     gridArr.value = sudokuField
     generatedPuzzle.value = sudokuField
-    const boardToSave = {
-      puzzle: sudokuField,
-      solvedPuzzle: solvedPuzzle.value
-    }
-    localStorage.setItem('savedBoard', JSON.stringify(boardToSave))
+    saveBoardToLocalStorage()
   }
 }
 

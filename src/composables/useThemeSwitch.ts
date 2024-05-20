@@ -15,9 +15,9 @@ export default function useThemeSwitch() {
 
   // Get color scheme from local storage
   const schemeFromLocalStorage = () => {
-    if (typeof window.localStorage !== 'undefined') {
-      if (window.localStorage.getItem(localStorageKey) !== null) {
-        return window.localStorage.getItem(localStorageKey)
+    if (typeof window?.localStorage !== 'undefined') {
+      if (window?.localStorage?.getItem(localStorageKey) !== null) {
+        return window?.localStorage?.getItem(localStorageKey)
       }
     }
     return _scheme.value

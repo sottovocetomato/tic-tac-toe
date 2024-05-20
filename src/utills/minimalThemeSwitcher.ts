@@ -41,7 +41,7 @@ const themeSwitcher = {
     const button = document.querySelector(this.buttonTarget)
     button?.addEventListener(
       'click',
-      (event) => {
+      (event: Event) => {
         event.preventDefault()
         // Set scheme
         this.scheme = button.getAttribute(this.buttonAttribute) || 'light'

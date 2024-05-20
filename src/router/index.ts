@@ -7,7 +7,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       // which is lazy-loaded when the route is visited.
-      component: () => import('../components/Sudoku.vue')
+      component: () => import('../views/MainPage.vue')
     },
     {
       path: '/wordle',
@@ -26,6 +26,12 @@ const router = createRouter({
       name: 'snake',
       // which is lazy-loaded when the route is visited.
       component: () => import('../components/Snake.vue')
+    },
+    {
+      path: '/sudoku',
+      name: 'sudoku',
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../components/Sudoku.vue')
     }
   ]
 })

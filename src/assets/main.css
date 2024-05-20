@@ -17,3 +17,10 @@
 /*  transition: 0.4s;*/
 /*  padding: 3px;*/
 /*}*/
+.cls-1 {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
