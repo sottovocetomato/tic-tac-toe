@@ -22,20 +22,22 @@
       <!--      </button>-->
       <div class="game-controls-grid">
         <button
-          @click="() => setGenerationLimit(30)"
-          :class="`contrast control-button ${generationLimit === 30 ? 'active' : ''}`"
+          @click="() => setGenerationLimit(DIFFICULTY.EASY)"
+          :class="`contrast control-button ${generationLimit === DIFFICULTY.EASY ? 'active' : ''}`"
         >
           Easy
         </button>
         <button
-          @click="() => setGenerationLimit(22)"
-          :class="`contrast control-button ${generationLimit === 22 ? 'active' : ''}`"
+          @click="() => setGenerationLimit(DIFFICULTY.MEDIUM)"
+          :class="`contrast control-button ${
+            generationLimit === DIFFICULTY.MEDIUM ? 'active' : ''
+          }`"
         >
           Medium
         </button>
         <button
-          @click="() => setGenerationLimit(15)"
-          :class="`contrast control-button ${generationLimit === 15 ? 'active' : ''}`"
+          @click="() => setGenerationLimit(DIFFICULTY.HARD)"
+          :class="`contrast control-button ${generationLimit === DIFFICULTY.HARD ? 'active' : ''}`"
         >
           Hard
         </button>
@@ -47,6 +49,13 @@
       >
         Generate Sudoku
       </button>
+      <button
+        @click="onSudokuSolveRequest"
+        class="contrast control-button"
+        :disabled="!solvedPuzzle.length"
+      >
+        Solve Sudoku
+      </button>
     </div>
   </div>
 </template>
@@ -54,6 +63,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import useThemeSwitch from '@/composables/useThemeSwitch'
+
+const DIFFICULTY = {
+  EASY: 30,
+  MEDIUM: 22,
+  HARD: 15
+}
 
 const { getScheme } = useThemeSwitch()
 type gridBoard = (string | null)[][]
@@ -129,6 +144,14 @@ function onSudokuGenerate() {
     localStorage.setItem('puzzleInProgress', JSON.stringify(null))
     saveBoardToLocalStorage()
   })
+}
+function onSudokuSolveRequest() {
+  gridCollection.value.forEach((el, ind) => {
+    el.value = solvedPuzzle.value?.[Math.floor(ind / 9)]?.[ind % 9]
+    if (el.classList.contains('wrong-answer') || el.classList.contains('right-answer'))
+      el.classList.remove(el.classList.contains('wrong-answer') ? 'wrong-answer' : 'right-answer')
+  })
+  localStorage.setItem('puzzleInProgress', JSON.stringify(solvedPuzzle.value))
 }
 
 function saveBoardToLocalStorage() {
