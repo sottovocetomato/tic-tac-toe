@@ -40,8 +40,8 @@
         <div>
           <label for="game-difficulty" class="select-label">Choose ai difficulty:</label>
           <select id="game-difficulty" @change="changeDifficulty" :disabled="gameIsRunning">
-            <option value="1">Medium</option>
-            <option value="4">Hard</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
           </select>
         </div>
       </div>
@@ -59,14 +59,19 @@ const { getScheme } = useThemeSwitch()
 
 type gridBoard = (string | null)[][]
 
+const moveCount = ref<number>(0)
+
 const gridSize = ref<number>(3)
 const gridWrap = ref<HTMLDivElement | null>(null)
 const gridCollection = ref<NodeListOf<HTMLElement> | []>([])
 const gridArr = ref<gridBoard>([])
 
+const winCheckOffset = computed<number>(() => (gridSize.value === 3 ? 5 : 9))
+
 const isAiFirst = ref<boolean>(false)
 
 const gameDepth = ref<number>(1)
+const gameDifficulty = ref<string>('easy')
 
 const maximizerToken = 'X'
 const minimizerToken = 'O'
@@ -99,10 +104,27 @@ function changeStartingP(e: Event) {
   isAiFirst.value = (e.target as HTMLInputElement).value === 'ai'
 }
 function changeDifficulty(e: Event) {
-  gameDepth.value = +(e.target as HTMLInputElement).value
+  gameDifficulty.value = (e.target as HTMLInputElement).value
+  changeGameDepth()
+}
+
+function changeGameDepth() {
+  if (gridSize.value === 3 && gameDifficulty.value === 'easy') {
+    gameDepth.value = 3
+  }
+  if (gridSize.value === 5 && gameDifficulty.value === 'easy') {
+    gameDepth.value = 1
+  }
+  if (gridSize.value === 3 && gameDifficulty.value === 'medium') {
+    gameDepth.value = 7
+  }
+  if (gridSize.value === 5 && gameDifficulty.value === 'medium') {
+    gameDepth.value = 3
+  }
 }
 function changeGridSize(e: Event) {
   gridSize.value = +(e.target as HTMLInputElement).value
+  changeGameDepth()
   setupGridInteractions()
 }
 
@@ -158,6 +180,7 @@ function playerMove(c: HTMLElement) {
   const column = cellId % gridSize.value ? (cellId % gridSize.value) - 1 : gridSize.value - 1
 
   gridArr.value[row][column] = playerToken.value
+  moveCount.value++
   winner.value = checkWin(gridArr.value) || ''
   if (winner.value) {
     gameIsRunning.value = false
@@ -174,6 +197,7 @@ function cpuMove() {
   if (move === null) return
   gridArr.value[move!.r][move!.c] = aiToken.value
   gridCollection.value[gridSize.value * move!.r + move!.c].innerText = aiToken.value
+  moveCount.value++
   winner.value = checkWin(gridArr.value) || ''
   if (winner.value) {
     gameIsRunning.value = false
@@ -183,6 +207,7 @@ function cpuMove() {
 }
 
 function checkWin(board: gridBoard) {
+  if (moveCount.value < winCheckOffset.value) return
   let winner = null
   let tokenStreak = 0
   for (let r = 0; r < board.length; r++) {
@@ -253,6 +278,7 @@ function minimax(
     const evaluated = result === aiToken.value ? scoreMap[result] - depth : scoreMap[result] + depth
     return { score: evaluated }
   }
+  console.log(depth, 'minmax works')
   if (isMaximizing) {
     let bestScore = -Infinity
     let move: Move = { r: 0, c: 0 }
